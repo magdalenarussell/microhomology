@@ -144,3 +144,4 @@ Write manuscript draft.
 
 #### Test
 At this stage, if some things need to be verified in vitro, make a concrete plan of what needs to be verified and contact relevant teams for collaboration.
+Train the model on equal amounts of each V/D/J pairing to make it not learn any V/D/J gene usage bias and how it performs
