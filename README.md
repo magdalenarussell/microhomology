@@ -67,17 +67,16 @@ Once we have a model, we can look for differences in microhomology between indiv
 
 ## What data will you use? Are there appropriate hold-out sets?
 
-%MR I think it would be good to clarify which data we want to train our model with (and use for exploratory analysis) and which we want to hold-out
-%MR I have proposed a split here, but of course feel free to change whatever!
 For model training and exploratory analysis:
 * We will use simulated IGoR sequences.
 * We will use preterm and cord blood repertoires to limit N insertions.
 * We will use thymic TCR data from young children, for a bigger amount of non-productive sequences.
+* We will use the Emerson data as a "typical blood repertoire" dataset
 
 For model validation/testing:
 * We will use some Omenn's Syndrome repertoires, where they have oligoclonal TCR repertoires (defective V(D)J recombination, will keep some of the model's "moving parts" stable)
 * We will test on some BCR data to verify if the microhomology model applies across all immune receptors.
-* We will use the GWAS-Emerson set, to validate in a large cohort and look for genomic variation associations
+* We will use the GWAS-Emerson set, to look for genomic variation associations
 
 ## Sketch the approach, broken down into steps, with expected amounts of time and intermediate steps for each.
 
@@ -110,12 +109,13 @@ If there is signal in the data, sounds reasonable to continue.
 
 ### Level 1 model (2 months):
 
-Model only trimming, no N insertions.
+Model only trimming, no N insertions with uniform V,D,J gene usage distribution.
 Identify relationship between trimming and microhomology.
 
 #### Test
 
 Does this model fit the no-N-insertion data better than the current existing model?
+Do we need to explicitly model V, D, J gene usage?
 
 #### How do we decide to move onto the next stage?
 
@@ -143,6 +143,4 @@ Write manuscript draft.
 
 #### Test
 At this stage, if some things need to be verified in vitro, make a concrete plan of what needs to be verified and contact relevant teams for collaboration.
-%MR Do we want to discuss how we will first explore the relationship between MH and trims/inserts and then explore how MH may influence gene usage?
-%MR Or are you thinking it would be better to incorporate gene usage into the model from the start?
 Train the model on equal amounts of each V/D/J pairing to make it not learn any V/D/J gene usage bias and how it performs
