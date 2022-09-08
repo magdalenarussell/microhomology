@@ -4,13 +4,7 @@ from tqdm import tqdm
 import pandas as pd
 import sys
 
-
-if sys.argv[1]=='productive':
-    selection = 'productive'
-elif sys.argv[1] == 'non-productive':
-    selection = 'non-productive'
-else:
-    selection = 'all'
+selection = sys.argv[1]
 
 
 all_counts = []
@@ -23,10 +17,13 @@ for ptname in tqdm(fnames):
     data = pd.read_csv(f'processed_DJ/{ptname}_withmh.csv')
     data['new_j_trim'] = data['j_trim']-pd.Series([min(max(0,i),2) for i in data['j_pnucs']])
     data['new_d1_trim'] = data['d1_trim']-pd.Series([min(max(0,i),2) for i in data['d1_pnucs']])
+
     if selection == 'productive':
         data = data[data['productive']]
     elif selection == 'non-productive':
         data = data[~data['productive']]
+    elif selection == 'no-insertions':
+        data = data[data['dj_insert']==0]
 
 
     d = 'TRBD1*01'
