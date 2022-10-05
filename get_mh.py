@@ -121,9 +121,8 @@ for i in tqdm(range(data.shape[0])):
         thisj_trim = data.iloc[i]['j_trim']+2-nb_p
 
 
-        #subseq = get_p_nuc_5prime(thisj_seq)
+        ### subseq is the trimmed off piece of the gene
         subseq = thisj_seq[:thisj_trim]
-
 
 
         thisd_seq = msa_dgenes[msa_dgenes['name']==thisd]['original_seq'].values[0]
@@ -131,12 +130,11 @@ for i in tqdm(range(data.shape[0])):
         nb_p = max(data.iloc[i]['d1_pnucs'],0)
         thisd_trim = data.iloc[i]['d1_trim']+2-nb_p
 
-        #thisd_seq = get_p_nuc_3prime(thisd_seq)
+        ### we keep only the gene until the trim
         thisd_seq = thisd_seq[:-thisd_trim]
 
         n_mh_exact.append(exact_match(thisd_seq, get_complement(subseq)))
-        mh  = mismatch_mh(thisd_seq, get_complement(subseq))
-        n_mh_mismatch.append(mh)
+        n_mh_mismatch.append(mismatch_mh(thisd_seq, get_complement(subseq)))
     else:
         n_mh_exact.append(0)
         n_mh_mismatch.append(0)
@@ -172,8 +170,6 @@ for i in tqdm(range(data.shape[0])):
         subseq = thisd_seq[:thisd_trim] #d5' sequence that is trimmed off
 
 
-
-
         #thisd_seq = get_p_nuc_3prime(thisd_seq)
         thisv_seq = thisv_seq[:-thisv_trim]
 
@@ -189,7 +185,7 @@ data['exact_mh_vd'] = n_mh_exact
 data['mismatch_mh_vd'] = n_mh_mismatch
 
 
-data.to_csv(f'processed_DJ/{pt_name}_withmh.csv')
+data.to_csv(f'processed_both/{pt_name}_withmh.csv')
 
 
 
