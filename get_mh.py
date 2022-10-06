@@ -184,8 +184,10 @@ for i in tqdm(range(data.shape[0])):
 data['exact_mh_vd'] = n_mh_exact
 data['mismatch_mh_vd'] = n_mh_mismatch
 
-
-data.to_csv(f'processed_both/{pt_name}_withmh.csv')
+import os
+print ('Done!')
+print (os.getcwd())
+data.to_csv(f'./processed_both/{pt_name}_withmh.csv')
 
 
 
