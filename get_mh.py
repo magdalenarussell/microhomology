@@ -14,14 +14,6 @@ def exact_match(seq5,res_seq3):
             break
     return match
 
-def get_p_nuc_3prime(seq):
-    complement = {'A':'T','T':'A','C':'G','G':'C'}
-    return seq+complement[seq[-1]]+complement[seq[-2]]
-
-def get_p_nuc_5prime(seq):
-    complement = {'A':'T','T':'A','C':'G','G':'C'}
-    return complement[seq[1]]+complement[seq[0]]+seq
-
 
 def get_complement(seq):
     new_seq = ''
@@ -30,17 +22,6 @@ def get_complement(seq):
         new_seq+=complement[i]
     return new_seq
 
-
-def exact_mh(s1, s2):
-    fit = [0]
-    for n in range(1,min(len(s1), len(s2))+1):
-        same = np.sum([i==j for i,j in zip(s1[-n:],s2[:n])])
-        if same == n:
-            fit.append(same)
-        else:
-            fit.append(0)
-        #print (s1[-n:], s2[:n])
-    return np.max(fit)
 
 def mismatch_mh(s1, s2):
     fit = [0]
@@ -166,11 +147,9 @@ for i in tqdm(range(data.shape[0])):
         nb_p = max(data.iloc[i]['d0_pnucs'],0)
         thisd_trim = data.iloc[i]['d0_trim']+2-nb_p
 
-        #subseq = get_p_nuc_5prime(thisj_seq)
         subseq = thisd_seq[:thisd_trim] #d5' sequence that is trimmed off
 
 
-        #thisd_seq = get_p_nuc_3prime(thisd_seq)
         thisv_seq = thisv_seq[:-thisv_trim]
 
         n_mh_exact.append(exact_match(thisv_seq, get_complement(subseq)))
