@@ -102,10 +102,11 @@ Do we see signal?
 
 If there is signal in the data, sounds reasonable to continue.
 
-### Level 1 model (2 months):
+### Level 1 model (1 month):
 
 Design a "mechanistic trimming" model to define the relationship between trimming and microhomology.
 We will only model trimming at this stage, not N-insertions.
+Ideally, this model will be structured in a way that will allow us to explore the relationship between sequence-level features, MH, and trimming probabilities.
 
 We will restrict the training data set to include only non-productive sequences containing zero N-insertions.
 
@@ -117,10 +118,17 @@ Does this model fit the no-N-insertion data better than Maggie's current "mechan
 
 Depending on the test result, we can move onto modeling sequences with N insertions.
 
-### Level 2 model (2 months):
+
+### Level 2 model (2-3 months):
 
 Design a "mechanistic" junctional processing model to define the relationship between trimming, N-insertion, and microhomology.
 Here, we will build upon our model from Level 1 to add the N-insertion component.
+Ideally, this model will be structured in a way that will allow us to:
+
+- continue exploring the mechanistic relationship between trimming and MH
+- explore the mechanistic relationship between N-insertion/other NHEJ processes and MH 
+- explore whether the amount of MH influences the order in which nucleases/polymerases/ligases/etc. are recruited to the junction
+- define the optimal amount of MH between two sequences during NHEJ 
 
 We will continue restricting the training data set to include only non-productive sequences, but will now include all sequences, regardless of their extent of N-insertion.
 
