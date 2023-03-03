@@ -1,2 +1,6 @@
+# directories to ignore
 _ignore/
 plots/
+
+# temporary files to ignore
+temp*

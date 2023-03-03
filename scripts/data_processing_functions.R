@@ -1,36 +1,30 @@
-get_whole_nucseqs <- function(){
-    whole_nucseq = fread(get(paste0('WHOLE_NUCSEQS_alpha')))[, -c('name')]
-    return(whole_nucseq[, c('gene', 'sequence')])
-}
-
-get_similarity_distance <- function(nt_count, gene_type = 'J', whole_nucseqs){
-    # TODO this function only works for J-genes
-    require(DECIPHER)
-    require(Biostrings)
-    tr = whole_nucseqs[gene %like% gene_type]
-    tr[, short:= substring(sequence, 1, nt_count)]
-    dists = DistanceMatrix(DNAStringSet(tr$short))
-
-    tr[, dist := rowMeans(dists)]
-    tr[, dist_nt_count := nt_count]
-    return(tr)
-}
-
 read_all_data <- function(directory){
     require(vroom)
-    files = list.files(directory, pattern = 'tsv', full.names = TRUE)
-    data = vroom(files)
-    data = as.data.table(data)
-    return(data)
+    all_data = data.table()
+    files = list.files(directory, pattern = 'sv', full.names = TRUE)
+    iter = ceiling(length(files)/1000)
+    for (it in seq(iter)){
+        start = (it-1)*1000 + 1
+        end = min(it*1000, length(files))
+        subset = files[start:end]
+        data = vroom(subset)
+        data = as.data.table(data)
+        all_data = rbind(all_data, data)
+    }
+    return(all_data)
 }
 
 convert_adaptive_gene_names_to_imgt <- function(data, gene_col){
-    mapping = fread('https://raw.githubusercontent.com/kmayerb/tcrdist3/master/tcrdist/db/adaptive_imgt_mapping.csv')[species == 'human']
-    gene_type = toupper(substring(gene_col, 1, 1))
-    data[, c(gene_col, "allele") := tstrsplit(get(gene_col), "\\*0")]
-    tog = merge(data, mapping, by.x = gene_col, by.y = 'adaptive', all.x = TRUE, allow.cartesian = TRUE)
-    setnames(tog, 'imgt', paste0(tolower(gene_type), '_gene'))
-    return(tog[, -c('allele', 'species')])
+    if (data[[gene_col]][1] %like% 'TCR'){
+        mapping = fread('https://raw.githubusercontent.com/kmayerb/tcrdist3/master/tcrdist/db/adaptive_imgt_mapping.csv')[species == 'human']
+        gene_type = toupper(substring(gene_col, 1, 1))
+        data[, c(gene_col, "allele") := tstrsplit(get(gene_col), "\\*0")]
+        tog = merge(data, mapping, by.x = gene_col, by.y = 'adaptive', all.x = TRUE, allow.cartesian = TRUE)
+        setnames(tog, 'imgt', paste0(tolower(gene_type), '_gene'))
+        return(tog[, -c('allele', 'species')])
+    } else {
+        return(data)
+    }
 }
 
 convert_frame_type_to_productivity <- function(data){
@@ -50,28 +44,35 @@ convert_trims <- function(data, trim_col){
 }
 
 convert_adaptive_style_to_imgt <- function(data){
-    # convert genes 
-    for (col in c('v_resolved', 'd_resolved', 'j_resolved')){
-        data = convert_adaptive_gene_names_to_imgt(data, col)
-    } 
+    adaptive_cols = c('v_resolved', 'd_resolved', 'j_resolved')
+    if (any(adaptive_cols %in% colnames(data))){
+        # convert genes 
+        for (col in adaptive_cols){
+            data = convert_adaptive_gene_names_to_imgt(data, col)
+        } 
 
-    # convert productivity
-    data = convert_frame_type_to_productivity(data)
+        # convert productivity
+        data = convert_frame_type_to_productivity(data)
 
-    # convert trims
-    for (trim in c('v_', 'd3_', 'd5_', 'j_')){
-        data = convert_trims(data, paste0(trim, 'deletions'))
-        data[[paste0(trim, 'trim')]] = as.numeric(data[[paste0(trim, 'trim')]])
+        # convert trims
+        for (trim in c('v_', 'd3_', 'd5_', 'j_')){
+            data = convert_trims(data, paste0(trim, 'deletions'))
+            data[[paste0(trim, 'trim')]] = as.numeric(data[[paste0(trim, 'trim')]])
+        }
+        return(data)
+    } else {
+        return(data)
     }
-    return(data)
 }
 
-filter_data <- function(data){
+filter_data <- function(data, filter_frequency = FALSE){
     # filter by productivity
     subset = data[productive == PRODUCTIVITY]
     
     # reomve observations containing a d_gene
-    subset = subset[is.na(d_gene)]
+    if ('d_gene' %in% colnames(subset)){
+        subset = subset[is.na(d_gene)]
+    }
 
     # remove observations with missing genes
     for (gene in c('v_gene', 'j_gene')){
@@ -83,16 +84,23 @@ filter_data <- function(data){
 
     # bound to reasonable trims
     subset = subset[get(TRIM_TYPE) <= 24]
+    subset[get(TRIM_TYPE) < 0 , paste(TRIM_TYPE) := 0]
 
     # remove delta
     subset = subset[!(get(GENE_NAME) %like% 'TRD')]
+
+    subset[, total_count := .N, by = .(sample_name, productive)]
+    if (filter_frequency == TRUE){
+        subset = filter_by_freq(subset, output_uncondensed = TRUE)
+    }
     return(subset)
 }
 
 get_unobserved_observations <- function(data){
     # get unobserved observations
-    cols = c('v_gene', 'j_gene', 'sample_name', TRIM_TYPE)
-    no_trim_cols = cols[!(cols %in% c('sample_name', TRIM_TYPE))]
+    cols = c('v_gene', 'j_gene', 'sample_name', TRIM_TYPE, 'total_count')
+    no_trim_cols = cols[!(cols %in% c('sample_name', TRIM_TYPE, 'total_count'))]
+    count_pair = unique(data[, c('sample_name', 'total_count')])
     # get unique genes
     unique_obs = unique(data[,..no_trim_cols])
 
@@ -106,6 +114,7 @@ get_unobserved_observations <- function(data){
             as.data.table()
     setnames(desired_obs, 'trim_length', TRIM_TYPE)
     # get unobserved subset
+    desired_obs = merge(desired_obs, count_pair)
     unobserved = desired_obs[!data, on = cols]
     unobserved$count = 0
     unobserved$productive = PRODUCTIVITY
@@ -113,20 +122,24 @@ get_unobserved_observations <- function(data){
     return(tog)
 }
 
-condense_data <- function(data){
-    subset = filter_by_freq(data)
+condense_data <- function(data, filter = TRUE){
+    subset = filter_by_freq(data, filter)
+    
     # get average trimming profiles
     cols = c(TRIM_TYPE, 'v_gene', 'j_gene', 'productive', 'avg_paired_freq', 'subj_count')
 
     subset[, p_trim_given_gene := count/paired_gene_count]
     avg = subset[, mean(p_trim_given_gene), by = cols]     
     setnames(avg, 'V1', 'p_trim_given_pair')
+    avg[avg_paired_freq < 5e-04, low_freq := TRUE]
+    avg[avg_paired_freq >= 5e-04, low_freq := FALSE]
     return(avg)
 }
 
-filter_by_freq <- function(data){
+filter_by_freq <- function(data, filter = TRUE, output_uncondensed = FALSE){
+    orig_data = data
     # get counts
-    cols = c('sample_name', TRIM_TYPE, 'v_gene', 'j_gene', 'productive')
+    cols = c('sample_name', TRIM_TYPE, 'v_gene', 'j_gene', 'productive', 'total_count')
     data = data[, .N, by = cols]
     setnames(data, 'N', 'count')
 
@@ -134,42 +147,42 @@ filter_by_freq <- function(data){
     data = get_unobserved_observations(data)
 
     # get frequencies
-    data[, total_count := sum(count), by = .(sample_name, productive)]
     data[, v_gene_count := sum(count), by = .(sample_name, v_gene, productive)]
     data[, j_gene_count := sum(count), by = .(sample_name, j_gene, productive)]
     data[, paired_gene_count := sum(count), by = .(sample_name, v_gene, j_gene, productive)]
     data[, paired_freq := paired_gene_count/total_count]
 
     # filter by frequencies
-    subset = data[paired_freq > 5e-04]
-    subset[, subj_count := .N/25, by = .(v_gene, j_gene, productive)]
-    subset = subset[subj_count >= 3]
+    max_trims = length(unique((data[[TRIM_TYPE]])))
+    if (isTRUE(filter)){
+        subset = data[paired_freq > 5e-04]
+        subset[, subj_count := .N/max_trims, by = .(v_gene, j_gene, productive)]
+        thresh = ceiling(0.75*length(unique(subset$sample_name)))
+        subset = subset[subj_count >= thresh]
+    } else {
+        subset = data
+        subset[, subj_count := .N/max_trims, by = .(v_gene, j_gene, productive)]
+    }
     subset[, avg_paired_freq := mean(paired_freq), by = .(v_gene, j_gene, productive)]
+    if (output_uncondensed == TRUE){
+        subset[, temp := paste0(v_gene, j_gene)]
+        orig_data[, temp := paste0(v_gene, j_gene)]
+        pairs = unique(subset$temp)
+        subset = orig_data[temp %in% pairs]
+    }
     return(subset)
 }
 
-get_original_mean_curve <- function(original_condensed_data, new_condensed_data){
-    original_condensed_data[, mean_p_trim_given_pair := mean(p_trim_given_pair), by = .(v_trim, v_gene, productive)]
-    cols = c('mean_p_trim_given_pair', 'v_gene', 'v_trim', 'productive')
+get_original_mean_curve <- function(original_condensed_data, new_condensed_data, gene_type = GENE_NAME){
+    cols0 = c('v_trim', gene_type, 'productive')
+    original_condensed_data[, mean_p_trim_given_pair := mean(p_trim_given_pair), by = cols0]
+    cols = c('mean_p_trim_given_pair', gene_type, 'v_trim', 'productive')
     new_condensed_data = merge(new_condensed_data, unique(original_condensed_data[, ..cols])) 
     return(new_condensed_data)
 }
 
-calculate_mean_of_abs_diffs <- function(condensed_data, original_condensed_data, repeated = FALSE){
-    condensed_data = get_original_mean_curve(original_condensed_data, condensed_data)
-    condensed_data[, abs_diff := abs(mean_p_trim_given_pair - p_trim_given_pair)]
-    if (isFALSE(repeated)){
-        temp = condensed_data[, mean(abs_diff), by = .(v_gene, j_gene, productive, avg_paired_freq, subj_count)]
-    } else {
-        temp = condensed_data[, mean(abs_diff), by = .(v_gene, j_gene, productive, avg_paired_freq, subj_count, draw)]
-    }
-    setnames(temp, 'V1', 'mean_abs_diff')
-    return(temp)
-}
-
-
-calculate_sum_of_abs_diffs <- function(condensed_data, original_condensed_data, repeated = FALSE){
-    condensed_data = get_original_mean_curve(original_condensed_data, condensed_data)
+calculate_sum_of_abs_diffs <- function(condensed_data, original_condensed_data, repeated = FALSE, gene_type = GENE_NAME){
+    condensed_data = get_original_mean_curve(original_condensed_data, condensed_data, gene_type)
     condensed_data[, abs_diff := abs(mean_p_trim_given_pair - p_trim_given_pair)]
     if (isFALSE(repeated)){
         temp = condensed_data[, sum(abs_diff), by = .(v_gene, j_gene, productive, avg_paired_freq, subj_count)]
@@ -180,51 +193,72 @@ calculate_sum_of_abs_diffs <- function(condensed_data, original_condensed_data, 
     return(temp)
 }
 
-bootstrap_diffs <- function(set_of_joining_genes, empirical_data){
-    sample = sample(set_of_joining_genes, length(set_of_joining_genes), replace = TRUE)
-    random_dt = data.table()
-    random_joins = data.table()
-    for (rep in seq(1, length(set_of_joining_genes))){
-        rep_sample = sample[rep]
-        temp = empirical_data[get(JOINING_GENE) == rep_sample][, -c('abs_diff')]
-        temp$draw = rep
-        join_temp = whole_nucseqs[gene == rep_sample]
-        random_joins = rbind(random_joins, join_temp)
-        random_dt = rbind(random_dt, temp)
-    }
-
-    return(list(random_whole_nucseqs = random_joins, random = random_dt))
+bootstrap_diffs <- function(uncondensed_data, filter = TRUE){
+    uncondensed_data[, total := .N, by = .(sample_name)]
+    sample = uncondensed_data[uncondensed_data[, sample(.I, .N, replace = TRUE), by = sample_name]$V1]
+    condensed = condense_data(sample, filter) 
+    return(list(condensed = condensed, uncondensed = sample))
 }
 
-run_diff_bootstrap <- function(set_of_joining_genes, empirical_data, boot_count){
-    results = data.table()
-    results_mean = data.table()
-    for (boot in seq(boot_count)){
-        bootstrap = bootstrap_diffs(set_of_joining_genes, empirical_data)
-        random_dt = bootstrap$random
-        random_joins = bootstrap$random_whole_nucseqs
-        random_diverged = calculate_sum_of_abs_diffs(random_dt, random_dt, repeated = TRUE)
-        random_mean_diverged = calculate_mean_of_abs_diffs(random_dt, empirical_data, repeated = TRUE)
-        # random_dists = get_similarity_distance(nt_count = 10, gene_type = toupper(substring(JOINING_GENE, 1, 1)), random_joins)
-        # random_diverged = merge(random_diverged, unique(random_dists), by.x = JOINING_GENE, by.y = 'gene', all.x = TRUE)
-        random_diverged$bootstrap = boot
-        random_mean_diverged$bootstrap = boot
-
-        results = rbind(results, random_diverged)
-        results_mean = rbind(results_mean, random_mean_diverged)
-
-        print(paste0('bootstrap ', boot, ' complete'))
+fit_multinom_models <- function(uncondensed_data, joining_gene = JOINING_GENE){
+    require(nnet)
+    if (length(unique(uncondensed_data$sample_name)) > 1){
+        null_form = as.formula(paste0(TRIM_TYPE, '~ sample_name'))
+        form = as.formula(paste0(TRIM_TYPE, '~ sample_name + ', joining_gene))
+    } else {
+        null_form = as.formula(paste0('as.factor(', TRIM_TYPE, ') ~ 1'))
+        form = as.formula(paste0('as.factor(',TRIM_TYPE, ') ~ as.factor(', joining_gene, ')'))
     }
-    return(list(sum = results, mean = results_mean))
+    null = multinom(null_form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
+    varying = multinom(form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
+    return(list(null = null, model = varying))
 }
 
-run_t_test <- function(boot_results, mean_divergence, sample_size){
-    df = sample_size - 1
-    sd = sd(boot_results$mean_divergence) 
-    tstat = (mean_divergence)/(sd/sqrt(sample_size)) 
-    # one-tail t test
-    p = pt(tstat, df = df, lower.tail = FALSE)
-    result = data.table(p = p, mean = mean_divergence, sd = sd, t_statistic = tstat, bootstraps = nrow(boot_results), total_joining_gene_count = sample_size)
-    result[[GENE_NAME]] = unique(boot_results[[GENE_NAME]])
+get_pval <- function(null_model, varying_model){
+    lrt = anova(null_model, varying_model)
+    result = data.table(p = lrt[['Pr(Chi)']][2], LRstat = lrt[['LR stat.']][2], df = lrt[['   Df']][2], null_lik = logLik(null_model), varying_lik = logLik(varying_model))
     return(result)
+}
+
+get_output_path <- function(){
+    path = file.path(OUTPUT_PATH, 'results', LOCUS, paste0(TRIM_TYPE, '_joining_', JOINING_GENE))
+    dir.create(path, recursive = TRUE)
+    return(path)
+}
+
+get_multinom_file_name <- function(type = 'lrt_pvalue'){
+    path = get_output_path()
+    name = file.path(path, paste0(type, '.tsv'))
+    return(name)
+}
+
+convert_model_coefs_to_dt <- function(model){
+    coefs = coef(model)
+    coefs_df = as.data.frame(coefs)
+    coefs_df$trim_length = rownames(coefs_df)
+    
+    pivot = coefs_df %>%
+        pivot_longer(!trim_length, names_to = 'coef', values_to = 'value') %>%
+        as.data.table()
+    return(pivot)
+}
+
+get_predicted_probs <- function(model, uncondensed_data){
+    interaction = interaction(unique(uncondensed_data$sample_name), unique(uncondensed_data[[JOINING_GENE]]))
+    df = data.table(temp = levels(interaction))
+    df[, sample_name := sapply(temp, function(x) str_split(x, '\\.')[[1]][1])]
+    df[, paste(JOINING_GENE) := sapply(temp, function(x) str_split(x, '\\.')[[1]][2])]
+
+    pred = as.data.table(predict(model, newdata = df, type = 'probs'))
+    pred = cbind(df, pred)
+
+    pred_long = pred[, -c('temp')] %>%
+        pivot_longer(!c(sample_name, j_gene), names_to = TRIM_TYPE, values_to = 'prob')%>%
+        as.data.table()
+    
+    cols = c(TRIM_TYPE, JOINING_GENE)
+    avg = pred_long[, mean(prob), by = cols]
+    setnames(avg, 'V1', 'avg_prob')
+    avg[[GENE_NAME]] = unique(uncondensed_data[[GENE_NAME]])
+    return(avg)
 }
