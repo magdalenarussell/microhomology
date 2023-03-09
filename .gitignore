@@ -5,4 +5,4 @@ plots/
 
 # temporary files to ignore
 temp*
-
+*.ipynb
