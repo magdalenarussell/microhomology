@@ -55,7 +55,7 @@ plot_general_scatter <- function(data, xvar, yvar, xtitle, ytitle, title, facet_
     if (!is.null(facet_var)){
         temp_plot = temp_plot +facet_wrap(~get(facet_var), ncol = facet_col)
     }
-    
+
     if (isTRUE(add_trend)){
         sig_data = get_smoothed_pval(data, xvar, yvar, facet_var)
 

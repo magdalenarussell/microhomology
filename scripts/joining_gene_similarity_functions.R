@@ -3,6 +3,7 @@ get_whole_nucseqs <- function(){
     return(whole_nucseq[, c('gene', 'sequence')])
 }
 
+
 get_subsequence <- function(seq_list, length, gene_type){
     if (toupper(gene_type) == 'J' | toupper(gene_type) == 'D5'){
         subseqs = substring(seq_list, 1, length) 

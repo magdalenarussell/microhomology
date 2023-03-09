@@ -16,6 +16,7 @@ TRIM_TYPE <<- args[2]
 JOINING_GENE <<- args[3]
 DATA_DIR <<- args[4]
 PRODUCTIVITY <<- args[5] 
+
 NCPU <<- as.numeric(10)
 GENE_NAME <<- paste0(substring(TRIM_TYPE, 1, 1), '_gene')
 
@@ -38,17 +39,21 @@ condensed_rep_data = condense_data(rep_data_subset, filter = TRUE)
 top_genes = unique(condensed_rep_data[order(-avg_paired_freq)][[GENE_NAME]])
 
 # Create a trimming distribution plot for each gene
+
 multinom_result = data.table()
 model_fits = list()
 model_coefs = data.table()
 model_predictions = data.table()
 
+
 for (gene_name in unique(top_genes)){
     print(paste0('starting ', gene_name))
+
     empirical_data = condensed_rep_data[get(GENE_NAME) == gene_name]
     uncondensed = rep_data_subset[get(GENE_NAME) == gene_name]
     
     subset = unique(empirical_data[[JOINING_GENE]])
+
 
     if (!(length(subset) > 1)){
         next

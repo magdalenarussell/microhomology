@@ -219,6 +219,7 @@ get_pval <- function(null_model, varying_model){
     lrt = anova(null_model, varying_model)
     result = data.table(p = lrt[['Pr(Chi)']][2], LRstat = lrt[['LR stat.']][2], df = lrt[['   Df']][2], null_lik = logLik(null_model), varying_lik = logLik(varying_model))
     result[, p:= pchisq(LRstat, df = df, lower.tail = FALSE)]
+    
     return(result)
 }
 
