@@ -30,6 +30,9 @@ get_smoothed_pval <- function(data, xvar, yvar, facet_var){
     results = data.table()
     for (v in unique(data[[facet_var]])){
         subset = data[get(facet_var) == v]
+        if (nrow(subset) <= 2){
+            next
+        }
         reg = lm(form, data = subset)
         result = data.table(gene = v, slope = signif(summary(reg)$coefficients[xvar, 'Estimate'], 4), pvalue = signif(summary(reg)$coefficients[xvar, 'Pr(>|t|)'], 4)) 
         results = rbind(results, result)
@@ -41,7 +44,6 @@ get_smoothed_pval <- function(data, xvar, yvar, facet_var){
 plot_general_scatter <- function(data, xvar, yvar, xtitle, ytitle, title, facet_var, facet_col, add_trend = FALSE){
     temp_plot = ggplot() +
         geom_point(data = data, aes(x = get(xvar), y = get(yvar)), size = 4, alpha = 0.3) +
-        facet_wrap(~get(facet_var), ncol = facet_col) +
         ggtitle(title) +
         xlab(xtitle) +
         ylab(ytitle) +
@@ -49,6 +51,10 @@ plot_general_scatter <- function(data, xvar, yvar, xtitle, ytitle, title, facet_
     theme(text = element_text(size = 40), axis.text.x=element_text(size = 30), axis.text.y = element_text(size = 30), axis.line = element_blank(),axis.ticks = element_line(color = 'gray60', size = 1.5), legend.position = 'bottom', legend.direction = 'horizontal', legend.justification="center") + 
         background_grid(major = 'xy') + 
         panel_border(color = 'gray60', size = 1.5)
+
+    if (!is.null(facet_var)){
+        temp_plot = temp_plot +facet_wrap(~get(facet_var), ncol = facet_col)
+    }
 
     if (isTRUE(add_trend)){
         sig_data = get_smoothed_pval(data, xvar, yvar, facet_var)

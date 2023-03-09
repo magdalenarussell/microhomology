@@ -88,6 +88,7 @@ filter_data <- function(data, filter_frequency = FALSE){
 
     # remove delta
     subset = subset[!(get(GENE_NAME) %like% 'TRD')]
+    subset = subset[!(get(JOINING_GENE) %like% 'TRD')]
 
     subset[, total_count := .N, by = .(sample_name, productive)]
     if (filter_frequency == TRUE){
@@ -217,11 +218,13 @@ fit_multinom_models <- function(uncondensed_data, joining_gene = JOINING_GENE){
 get_pval <- function(null_model, varying_model){
     lrt = anova(null_model, varying_model)
     result = data.table(p = lrt[['Pr(Chi)']][2], LRstat = lrt[['LR stat.']][2], df = lrt[['   Df']][2], null_lik = logLik(null_model), varying_lik = logLik(varying_model))
+    result[, p:= pchisq(LRstat, df = df, lower.tail = FALSE)]
+    
     return(result)
 }
 
 get_output_path <- function(){
-    path = file.path(OUTPUT_PATH, 'results', LOCUS, paste0(TRIM_TYPE, '_joining_', JOINING_GENE))
+    path = file.path(OUTPUT_PATH, 'results', PRODUCTIVITY, LOCUS, paste0(TRIM_TYPE, '_joining_', JOINING_GENE))
     dir.create(path, recursive = TRUE)
     return(path)
 }
@@ -252,8 +255,10 @@ get_predicted_probs <- function(model, uncondensed_data){
     pred = as.data.table(predict(model, newdata = df, type = 'probs'))
     pred = cbind(df, pred)
 
+    long_cols = c('sample_name', JOINING_GENE)
+
     pred_long = pred[, -c('temp')] %>%
-        pivot_longer(!c(sample_name, j_gene), names_to = TRIM_TYPE, values_to = 'prob')%>%
+        pivot_longer(!any_of(long_cols), names_to = TRIM_TYPE, values_to = 'prob')%>%
         as.data.table()
     
     cols = c(TRIM_TYPE, JOINING_GENE)
