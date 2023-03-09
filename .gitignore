@@ -1,6 +1,8 @@
 # directories to ignore
 _ignore/
 plots/
+.vscode/
 
 # temporary files to ignore
 temp*
+
