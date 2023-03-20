@@ -30,7 +30,7 @@ if (TRIM_TYPE %like% 'trim'){
 
 blas_set_num_threads(NCPU)
 
-path = paste0(PROJECT_PATH, '/plots/trim_by_join')
+path = paste0(PROJECT_PATH, '/plots/trim_by_join/',PRODUCTIVITY, '/', LOCUS, '/', TRIM_TYPE)
 dir.create(path, recursive = TRUE)
 
 source(paste0(PROJECT_PATH, '/scripts/data_processing_functions.R'))
@@ -61,7 +61,7 @@ dists_hamming = merge(pairwise, pairwise_hamming)
 
 pairwise_dists_hamming = plot_general_scatter(dists_hamming, yvar = 'sum_abs_diff', xvar = 'dist', ytitle = '\nPairwise sum of absolute differences in trimming distribution', xtitle = paste0('Pairwise hamming distance (first ', NT_COUNT, ' nt)\n'), title = '', facet_var = GENE_NAME, facet_col = 5, add_trend = TRUE)
  
-file_name = paste0(path, '/', PRODUCTIVITY, '/', LOCUS, '_', TRIM_TYPE, '_pairwise_SAD_versus_hamming_', NT_COUNT, '_nt_', JOINING_GENE, '.pdf')
+file_name = paste0(path, '/pairwise_SAD_versus_hamming_', NT_COUNT, '_nt_', JOINING_GENE, '.pdf')
 ggsave(file_name, plot = pairwise_dists_hamming, width = 35, height = 40, units = 'in', dpi = 750, device = cairo_pdf, limitsize = FALSE)
 
 # plot pairwise trim dists by pairwise hamming
@@ -70,7 +70,7 @@ if (NT_COUNT > 5){
 
     pairwise_dists_hamming_a = plot_general_scatter(dists_hamming_a, yvar = 'sum_abs_diff', xvar = 'dist', ytitle = '\nPairwise sum of absolute differences in trimming distribution', xtitle = paste0('Pairwise hamming distance (first ', NT_COUNT, ' nt) using aligned sequences\n'), title = '', facet_var = GENE_NAME, facet_col = 5, add_trend = TRUE)
      
-    file_name = paste0(path, '/', PRODUCTIVITY, '/', LOCUS, '_', TRIM_TYPE, '_pairwise_SAD_versus_hamming_aligned_', NT_COUNT, '_nt_', JOINING_GENE, '.pdf')
+    file_name = paste0(path, '/pairwise_SAD_versus_hamming_aligned_', NT_COUNT, '_nt_', JOINING_GENE, '.pdf')
     ggsave(file_name, plot = pairwise_dists_hamming_a, width = 35, height = 40, units = 'in', dpi = 750, device = cairo_pdf, limitsize = FALSE)
 }
 
@@ -79,5 +79,5 @@ dists_align = merge(pairwise, pairwise_align)
 
 pairwise_dists_align = plot_general_scatter(dists_align, yvar = 'sum_abs_diff', xvar = 'pairwise_score', ytitle = '\nPairwise sum of absolute differences in trimming distribution', xtitle = paste0('Pairwise global alignment score (first ', NT_COUNT, ' nt)\n'), title = '', facet_var = GENE_NAME, facet_col = 5, add_trend = TRUE)
  
-file_name = paste0(path, '/', PRODUCTIVITY, '/', LOCUS, '_', TRIM_TYPE, '_pairwise_SAD_versus_alignment_', NT_COUNT, '_nt_', JOINING_GENE, '.pdf')
+file_name = paste0(path, '/pairwise_SAD_versus_alignment_', NT_COUNT, '_nt_', JOINING_GENE, '.pdf')
 ggsave(file_name, plot = pairwise_dists_align, width = 35, height = 40, units = 'in', dpi = 750, device = cairo_pdf, limitsize = FALSE)

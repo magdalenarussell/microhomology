@@ -26,7 +26,7 @@ if (TRIM_TYPE %like% 'trim'){
 
 blas_set_num_threads(NCPU)
 
-path = paste0(PROJECT_PATH, '/plots/trim_by_join')
+path = paste0(PROJECT_PATH, '/plots/trim_by_join/',PRODUCTIVITY, '/', LOCUS, '/', TRIM_TYPE)
 dir.create(path, recursive = TRUE)
 
 source(paste0(PROJECT_PATH, '/scripts/data_processing_functions.R'))
@@ -68,7 +68,7 @@ for (gene_name in unique(top_genes)){
     temp_plot = ggplot() +
         geom_line(data = empirical_data, aes(x = get(TRIM_TYPE), y = avg_prob, group = get(JOINING_GENE)), size = 0.6, alpha = 0.5) +
         geom_vline(xintercept = 0, color = 'black', size = 2) +
-        geom_text(data = result, x = max_x, y = 0.15, aes(label = paste0('p = ', signif(p, 4))), size = 9) +
+        geom_text(data = result, x = Inf, y = Inf, aes(label = paste0('p = ', signif(p, 4))), size = 9, vjust = 1.3, hjust = 1.1) +
         ggtitle(gene_name) +
         xlab('Number of trimmed nucleotides') +
         ylab('Probability') +
@@ -90,5 +90,5 @@ for (gene_name in unique(top_genes)){
 all = plot_grid(plotlist=mget(paste0("gene", index_list)), ncol = 5) 
 
 # save plot
-file_name = paste0(path, '/', PRODUCTIVITY, '/', LOCUS, '_', TRIM_TYPE, '_gallery_by_joining_', JOINING_GENE, '_signif.pdf')
+file_name = paste0(path, '/gallery_by_joining_', JOINING_GENE, '_signif.pdf')
 ggsave(file_name, plot = all, width = 35, height = 30, units = 'in', dpi = 750, device = cairo_pdf, limitsize = FALSE)

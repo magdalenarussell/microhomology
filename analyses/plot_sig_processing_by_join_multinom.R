@@ -95,5 +95,5 @@ for (gene_name in unique(top_genes)){
 all = plot_grid(plotlist=mget(paste0("gene", index_list)), ncol = 5) 
 
 # save plot
-file_name = paste0(path, '/', PRODUCTIVITY, '/', LOCUS, '_', TRIM_TYPE, '_gallery_by_joining_', JOINING_GENE, '_signif.pdf')
+file_name = paste0(path, '/', PRODUCTIVITY, '/', LOCUS, '/', TRIM_TYPE, '/gallery_by_joining_', JOINING_GENE, '_signif.pdf')
 ggsave(file_name, plot = all, width = 35, height = 30, units = 'in', dpi = 750, device = cairo_pdf, limitsize = FALSE)
