@@ -18,6 +18,17 @@ read_all_data <- function(directory){
     return(all_data)
 }
 
+filter_chain <- function(data){
+    stopifnot(LOCUS %like% 'TR')
+    if (LOCUS == 'TRA'){
+        rearr = 'VJ'
+    } else {
+        rearr = 'VDJ'
+    }
+    data = data[rearrangement_type == rearr]
+    return(data)
+}
+
 convert_adaptive_gene_names_to_imgt <- function(data, gene_col){
     if (data[[gene_col]][1] %like% 'TCR'){
         mapping = fread('https://raw.githubusercontent.com/kmayerb/tcrdist3/master/tcrdist/db/adaptive_imgt_mapping.csv')[species == 'human']
@@ -67,6 +78,7 @@ convert_adaptive_style_to_imgt <- function(data){
         data[n1_insertions == 'no data', n1_insertions := 0]
         data$n1_insertions = as.numeric(data$n1_insertions)
         data = create_processing_vars(data)
+        data = filter_chain(data)
         return(data)
     } else {
         return(data)
@@ -222,14 +234,28 @@ fit_multinom_models <- function(uncondensed_data, joining_gene = JOINING_GENE){
         null_form = as.formula(paste0('as.factor(', TRIM_TYPE, ') ~ 1'))
         form = as.formula(paste0('as.factor(',TRIM_TYPE, ') ~ as.factor(', joining_gene, ')'))
     }
-    null = multinom(null_form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
-    varying = multinom(form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
+
+    if (length(unique(uncondensed_data[[TRIM_TYPE]])) > 2){
+        null = multinom(null_form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
+        varying = multinom(form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
+    } else {
+        null = glm(null_form, data = uncondensed_data, family = 'binomial')
+        varying = glm(form, data = uncondensed_data, family = 'binomial')
+    }
     return(list(null = null, model = varying))
 }
 
 get_pval <- function(null_model, varying_model){
-    lrt = anova(null_model, varying_model)
-    result = data.table(p = lrt[['Pr(Chi)']][2], LRstat = lrt[['LR stat.']][2], df = lrt[['   Df']][2], null_lik = logLik(null_model), varying_lik = logLik(varying_model))
+    if (any(class(varying_model) %like% 'glm')){
+        lrt = anova(null_model, varying_model, test = 'LRT')
+    } else {
+        lrt = anova(null_model, varying_model)
+    }
+    if ('LR stat.' %in% names(lrt)){
+        result = data.table(p = lrt[['Pr(Chi)']][2], LRstat = lrt[['LR stat.']][2], df = lrt[['   Df']][2], null_lik = logLik(null_model), varying_lik = logLik(varying_model))
+    } else {
+        result = data.table(p = lrt[['Pr(>Chi)']][2], LRstat = lrt[['Deviance']][2], df = lrt[['Df']][2], null_lik = logLik(null_model), varying_lik = logLik(varying_model))
+    }
     result[, p:= pchisq(LRstat, df = df, lower.tail = FALSE)]
     return(result)
 }
@@ -263,7 +289,12 @@ get_predicted_probs <- function(model, uncondensed_data){
     df[, sample_name := sapply(temp, function(x) str_split(x, '\\.')[[1]][1])]
     df[, paste(JOINING_GENE) := sapply(temp, function(x) str_split(x, '\\.')[[1]][2])]
 
-    pred = as.data.table(predict(model, newdata = df, type = 'probs'))
+    if (any(class(model) %like% 'glm')){
+        pred = as.data.table(predict(model, newdata = df, type = 'response'))
+    } else {
+        pred = as.data.table(predict(model, newdata = df, type = 'probs'))
+    }
+
     pred = cbind(df, pred)
 
     long_cols = c('sample_name', JOINING_GENE)

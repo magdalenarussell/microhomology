@@ -20,6 +20,11 @@ pairwise_diffs <- function(model_predictions){
  
     new_dt[, abs_diff := abs(avg_prob.x - avg_prob.y)]
     cols = c(GENE_NAME, paste0(JOINING_GENE, '.y'), paste0(JOINING_GENE, '.x'))
+
+    if (length(unique(new_dt[[TRIM_TYPE]])) == 2){
+        new_dt = new_dt[get(TRIM_TYPE) == TRUE]
+    }
+
     pairwise = new_dt[, sum(abs_diff), by = cols]
     setnames(pairwise, 'V1', 'sum_abs_diff')
     return(pairwise)
