@@ -37,11 +37,19 @@ get_smoothed_pval <- function(data, xvar, yvar, facet_var){
         result = data.table(gene = v, slope = signif(summary(reg)$coefficients[xvar, 'Estimate'], 4), pvalue = signif(summary(reg)$coefficients[xvar, 'Pr(>|t|)'], 4)) 
         results = rbind(results, result)
     }
-    setnames(results, 'gene', facet_var)
+    setnames(results, 'gene', facet_var, skip_absent = TRUE)
     return(results)
 }
 
 plot_general_scatter <- function(data, xvar, yvar, xtitle, ytitle, title, facet_var, facet_col, add_trend = FALSE){
+    if (isTRUE(add_trend)){
+        sig_data = get_smoothed_pval(data, xvar, yvar, facet_var)
+        levs = unique(sig_data[order(pvalue)][[facet_var]])
+        sig_data[[facet_var]] = factor(sig_data[[facet_var]], levels = levs)
+        data[[facet_var]] = factor(data[[facet_var]], levels = levs)
+        data = data[!is.na(get(facet_var))]
+    }
+
     temp_plot = ggplot() +
         geom_point(data = data, aes(x = get(xvar), y = get(yvar)), size = 4, alpha = 0.3) +
         ggtitle(title) +
@@ -57,11 +65,9 @@ plot_general_scatter <- function(data, xvar, yvar, xtitle, ytitle, title, facet_
     }
     
     if (isTRUE(add_trend)){
-        sig_data = get_smoothed_pval(data, xvar, yvar, facet_var)
-
         temp_plot = temp_plot +
-            geom_smooth(method = 'lm', data = data, aes(x = get(xvar), y = get(yvar)), se = FALSE, size = 3)+
-            geom_text(data = sig_data, aes(label = paste0('slope = ', slope, '\np-value = ', pvalue)), x = Inf, y = Inf, color = 'blue', size = 8, vjust = 1, hjust = 1, nudge_x = 0.02, nudge_y = 0.02)
+            geom_smooth(method = 'lm', data = data, aes(x = get(xvar), y = get(yvar)), size = 3, se = FALSE)+
+            geom_text(data = sig_data, aes(label = paste0('effect size = ', slope, '\np-value = ', pvalue)), x = Inf, y = Inf, color = 'blue', size = 8, vjust = 1.3, hjust = 1.1, nudge_x = 0.05, nudge_y = 0.05)
     }
 
     return(temp_plot)
@@ -90,3 +96,15 @@ plot_general_boxplot <- function(data, xvar, yvar, xtitle, ytitle, title, facet_
     
     return(temp_plot)
 }
+
+get_xaxis_multinom <- function(){
+    if (TRIM_TYPE %like% 'trim'){
+        label = 'Number of trimmed nucleotides'
+    } else if (TRIM_TYPE == 'zero_insert'){
+        label = 'Frequency of zero insertions'
+    } else if (TRIM_TYPE == 'zero_process'){
+        label = 'Frequency of zero trimmed or inserted nucleotides'
+    }
+    return(label)
+}
+

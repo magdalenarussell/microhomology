@@ -2,16 +2,31 @@ read_all_data <- function(directory){
     require(vroom)
     all_data = data.table()
     files = list.files(directory, pattern = 'sv', full.names = TRUE)
-    iter = ceiling(length(files)/1000)
-    for (it in seq(iter)){
-        start = (it-1)*1000 + 1
-        end = min(it*1000, length(files))
-        subset = files[start:end]
-        data = vroom(subset)
-        data = as.data.table(data)
-        all_data = rbind(all_data, data)
+    if (length(files) > 1){
+        iter = ceiling(length(files)/1000)
+        for (it in seq(iter)){
+            start = (it-1)*1000 + 1
+            end = min(it*1000, length(files))
+            subset = files[start:end]
+            data = vroom(subset)
+            data = as.data.table(data)
+            all_data = rbind(all_data, data)
+        }
+    } else {
+        all_data = fread(files)
     }
     return(all_data)
+}
+
+filter_chain <- function(data){
+    stopifnot(LOCUS %like% 'TR')
+    if (LOCUS == 'TRA'){
+        rearr = 'VJ'
+    } else {
+        rearr = 'VDJ'
+    }
+    data = data[rearrangement_type == rearr]
+    return(data)
 }
 
 convert_adaptive_gene_names_to_imgt <- function(data, gene_col){
@@ -59,6 +74,11 @@ convert_adaptive_style_to_imgt <- function(data){
             data = convert_trims(data, paste0(trim, 'deletions'))
             data[[paste0(trim, 'trim')]] = as.numeric(data[[paste0(trim, 'trim')]])
         }
+
+        data[n1_insertions == 'no data', n1_insertions := 0]
+        data$n1_insertions = as.numeric(data$n1_insertions)
+        data = create_processing_vars(data)
+        data = filter_chain(data)
         return(data)
     } else {
         return(data)
@@ -79,12 +99,14 @@ filter_data <- function(data, filter_frequency = FALSE){
         subset = subset[!is.na(get(gene))] 
     }
 
-    cols = c('sample_name', 'v_trim', 'j_trim', 'v_gene', 'j_gene', 'productive')
+    cols = c('sample_name', 'v_trim', 'j_trim', 'v_gene', 'j_gene', 'n1_insertions', 'zero_process', 'zero_insert', 'productive')
     subset = subset[, ..cols]
 
-    # bound to reasonable trims
-    subset = subset[get(TRIM_TYPE) <= 24]
-    subset[get(TRIM_TYPE) < 0 , paste(TRIM_TYPE) := 0]
+    if (TRIM_TYPE %like% 'trim'){
+        # bound to reasonable trims
+        subset = subset[get(TRIM_TYPE) <= 24]
+        subset[get(TRIM_TYPE) < 0 , paste(TRIM_TYPE) := 0]
+    }
 
     # remove delta
     subset = subset[!(get(GENE_NAME) %like% 'TRD')]
@@ -131,7 +153,7 @@ condense_data <- function(data, filter = TRUE){
 
     subset[, p_trim_given_gene := count/paired_gene_count]
     avg = subset[, mean(p_trim_given_gene), by = cols]     
-    setnames(avg, 'V1', 'p_trim_given_pair')
+    setnames(avg, 'V1', 'avg_prob')
     avg[avg_paired_freq < 5e-04, low_freq := TRUE]
     avg[avg_paired_freq >= 5e-04, low_freq := FALSE]
     return(avg)
@@ -145,7 +167,9 @@ filter_by_freq <- function(data, filter = TRUE, output_uncondensed = FALSE){
     setnames(data, 'N', 'count')
 
     # get unobserved data
-    data = get_unobserved_observations(data)
+    if (all(is.numeric(data[[TRIM_TYPE]]))){
+        data = get_unobserved_observations(data)
+    }
 
     # get frequencies
     data[, v_gene_count := sum(count), by = .(sample_name, v_gene, productive)]
@@ -176,7 +200,7 @@ filter_by_freq <- function(data, filter = TRUE, output_uncondensed = FALSE){
 
 get_original_mean_curve <- function(original_condensed_data, new_condensed_data, gene_type = GENE_NAME){
     cols0 = c('v_trim', gene_type, 'productive')
-    original_condensed_data[, mean_p_trim_given_pair := mean(p_trim_given_pair), by = cols0]
+    original_condensed_data[, mean_p_trim_given_pair := mean(avg_prob), by = cols0]
     cols = c('mean_p_trim_given_pair', gene_type, 'v_trim', 'productive')
     new_condensed_data = merge(new_condensed_data, unique(original_condensed_data[, ..cols])) 
     return(new_condensed_data)
@@ -184,7 +208,7 @@ get_original_mean_curve <- function(original_condensed_data, new_condensed_data,
 
 calculate_sum_of_abs_diffs <- function(condensed_data, original_condensed_data, repeated = FALSE, gene_type = GENE_NAME){
     condensed_data = get_original_mean_curve(original_condensed_data, condensed_data, gene_type)
-    condensed_data[, abs_diff := abs(mean_p_trim_given_pair - p_trim_given_pair)]
+    condensed_data[, abs_diff := abs(mean_p_trim_given_pair - avg_prob)]
     if (isFALSE(repeated)){
         temp = condensed_data[, sum(abs_diff), by = .(v_gene, j_gene, productive, avg_paired_freq, subj_count)]
     } else {
@@ -210,14 +234,28 @@ fit_multinom_models <- function(uncondensed_data, joining_gene = JOINING_GENE){
         null_form = as.formula(paste0('as.factor(', TRIM_TYPE, ') ~ 1'))
         form = as.formula(paste0('as.factor(',TRIM_TYPE, ') ~ as.factor(', joining_gene, ')'))
     }
-    null = multinom(null_form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
-    varying = multinom(form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
+
+    if (length(unique(uncondensed_data[[TRIM_TYPE]])) > 2){
+        null = multinom(null_form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
+        varying = multinom(form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
+    } else {
+        null = glm(null_form, data = uncondensed_data, family = 'binomial')
+        varying = glm(form, data = uncondensed_data, family = 'binomial')
+    }
     return(list(null = null, model = varying))
 }
 
 get_pval <- function(null_model, varying_model){
-    lrt = anova(null_model, varying_model)
-    result = data.table(p = lrt[['Pr(Chi)']][2], LRstat = lrt[['LR stat.']][2], df = lrt[['   Df']][2], null_lik = logLik(null_model), varying_lik = logLik(varying_model))
+    if (any(class(varying_model) %like% 'glm')){
+        lrt = anova(null_model, varying_model, test = 'LRT')
+    } else {
+        lrt = anova(null_model, varying_model)
+    }
+    if ('LR stat.' %in% names(lrt)){
+        result = data.table(p = lrt[['Pr(Chi)']][2], LRstat = lrt[['LR stat.']][2], df = lrt[['   Df']][2], null_lik = logLik(null_model), varying_lik = logLik(varying_model))
+    } else {
+        result = data.table(p = lrt[['Pr(>Chi)']][2], LRstat = lrt[['Deviance']][2], df = lrt[['Df']][2], null_lik = logLik(null_model), varying_lik = logLik(varying_model))
+    }
     result[, p:= pchisq(LRstat, df = df, lower.tail = FALSE)]
     return(result)
 }
@@ -251,7 +289,12 @@ get_predicted_probs <- function(model, uncondensed_data){
     df[, sample_name := sapply(temp, function(x) str_split(x, '\\.')[[1]][1])]
     df[, paste(JOINING_GENE) := sapply(temp, function(x) str_split(x, '\\.')[[1]][2])]
 
-    pred = as.data.table(predict(model, newdata = df, type = 'probs'))
+    if (any(class(model) %like% 'glm')){
+        pred = as.data.table(predict(model, newdata = df, type = 'response'))
+    } else {
+        pred = as.data.table(predict(model, newdata = df, type = 'probs'))
+    }
+
     pred = cbind(df, pred)
 
     long_cols = c('sample_name', JOINING_GENE)
@@ -265,4 +308,16 @@ get_predicted_probs <- function(model, uncondensed_data){
     setnames(avg, 'V1', 'avg_prob')
     avg[[GENE_NAME]] = unique(uncondensed_data[[GENE_NAME]])
     return(avg)
+}
+
+create_processing_vars <- function(rep_data){
+    # create var for zero processing
+    rep_data[v_trim == 0 & j_trim == 0 & n1_insertions == 0, zero_process := TRUE]
+    rep_data[!(v_trim == 0 & j_trim == 0 & n1_insertions == 0), zero_process := FALSE]
+
+    # create var for zero insertions
+    rep_data[n1_insertions == 0, zero_insert := TRUE]
+    rep_data[!(n1_insertions == 0), zero_insert := FALSE]
+    
+    return(rep_data)
 }

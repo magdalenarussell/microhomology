@@ -21,11 +21,16 @@ if (NT_COUNT != 'all'){
 }
 PRODUCTIVITY <<- args[6] 
 NCPU <<- as.numeric(10)
-GENE_NAME <<- paste0(substring(TRIM_TYPE, 1, 1), '_gene')
+if (TRIM_TYPE %like% 'trim'){
+    GENE_NAME <<- paste0(substring(TRIM_TYPE, 1, 1), '_gene')
+} else {
+    type = c('v_gene', 'j_gene')
+    GENE_NAME <<- type[type != JOINING_GENE] 
+}
 
 blas_set_num_threads(NCPU)
 
-path = paste0(PROJECT_PATH, '/plots/trim_by_join')
+path = paste0(PROJECT_PATH, '/plots/trim_by_join/',PRODUCTIVITY, '/', LOCUS, '/', TRIM_TYPE)
 dir.create(path, recursive = TRUE)
 
 source(paste0(PROJECT_PATH, '/scripts/data_processing_functions.R'))
@@ -33,15 +38,14 @@ source(paste0(PROJECT_PATH, '/scripts/joining_gene_similarity_functions.R'))
 source(paste0(PROJECT_PATH, '/scripts/trimming_distribution_similarity_functions.R'))
 source(paste0(PROJECT_PATH, '/scripts/plotting_functions.R'))
 
-file = prediction_name = get_multinom_file_name(type = 'model_preds') 
-preds = fread(file)
+# get data
+rep_data = read_all_data(directory = DATA_DIR)
+rep_data = convert_adaptive_style_to_imgt(rep_data) 
+rep_data_subset = filter_data(rep_data, filter_frequency = TRUE)
+preds = condense_data(rep_data_subset, filter = TRUE) 
 
 # get pairwise trim dist differences
 pairwise = pairwise_diffs(preds) 
-
-# cluster trim dists
-cluster = cluster_diffs(preds, cluster_count = 2)
-pairwise_cluster = transform_cluster_data_to_pairwise(cluster)
 
 # compare to sequence-based features of the joining gene level
 ## get pairwise hamming
@@ -100,5 +104,3 @@ cluster_dists_align = plot_general_boxplot(cluster_align[!(get(paste0(JOINING_GE
 file_name = paste0(path, '/', PRODUCTIVITY, '/', LOCUS, '_', TRIM_TYPE, '_cluster_versus_align_', NT_COUNT, '_nt_', JOINING_GENE, '.pdf')
 
 ggsave(file_name, plot = cluster_dists_align, width = 35, height = 40, units = 'in', dpi = 750, device = cairo_pdf, limitsize = FALSE)
-
-

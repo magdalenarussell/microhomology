@@ -11,13 +11,18 @@ library(RhpcBLASctl)
 args = commandArgs(trailingOnly=TRUE)
 
 LOCUS <<- args[1]
-stopifnot(LOCUS %in% c('TRB', 'TRA', 'TRA_igor'))
+stopifnot(LOCUS %in% c('TRA', 'TRA_igor'))
 TRIM_TYPE <<- args[2] 
 JOINING_GENE <<- args[3]
 DATA_DIR <<- args[4]
 PRODUCTIVITY <<- args[5] 
 NCPU <<- as.numeric(10)
-GENE_NAME <<- paste0(substring(TRIM_TYPE, 1, 1), '_gene')
+if (TRIM_TYPE %like% 'trim'){
+    GENE_NAME <<- paste0(substring(TRIM_TYPE, 1, 1), '_gene')
+} else {
+    type = c('v_gene', 'j_gene')
+    GENE_NAME <<- type[type != JOINING_GENE] 
+}
 
 blas_set_num_threads(NCPU)
 
