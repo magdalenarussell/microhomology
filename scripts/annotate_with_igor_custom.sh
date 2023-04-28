@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -eu
+
+RAW_FILE_PATH=$1
+TEMP_DIR=$2
+OUTPUT_DIR=$3
+ANNOTATION_COUNT=$4
+MODEL_PARAMS=$5
+MODEL_MARG=$6
+NCPU=$7
+PARTITION=$8
+
+mkdir -p $TEMP_DIR
+mkdir -p $OUTPUT_DIR
+
+for RAW_FILE in $RAW_FILE_PATH/*.tsv; do
+    TEMP_OUTPUT_FILE=$(basename -s .tsv $RAW_FILE)
+    TEMP_OUTPUT_FILE="$TEMP_DIR/$TEMP_OUTPUT_FILE"
+    mkdir $TEMP_OUTPUT_FILE
+    TEMP_OUTPUT_FILE="$TEMP_OUTPUT_FILE/running" 
+
+    COMMAND="sbatch -c $NCPU -p $PARTITION -q $PARTITION scripts/igor_scripts/run_igor_all_custom.sh $RAW_FILE $TEMP_DIR $OUTPUT_DIR $MODEL_PARAMS $MODEL_MARG $ANNOTATION_COUNT $NCPU"
+    echo $COMMAND
+
+    $COMMAND > $TEMP_OUTPUT_FILE
+done

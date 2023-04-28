@@ -1,4 +1,4 @@
-#!/bin/bash
+!/bin/bash
 
 source $HOME/miniconda3/etc/profile.d/conda.sh
 conda activate mechanistic-trimming_py
@@ -24,7 +24,7 @@ for ITER in {1200..2000..1}; do
     # now annotate sequences 
     cd $HOME/microhomology
 
-    COMMAND="python scripts/convert_seqs_with_igor_${CHAIN}.py $OUTPUT_DIR $INPUT_DIR $ITER"
+    COMMAND="python scripts/igor_scripts/convert_seqs_with_igor_${CHAIN}.py $OUTPUT_DIR $INPUT_DIR $ITER"
 
     $COMMAND
 done

@@ -11,10 +11,17 @@ get_raw_cdr3_seqs <- function(tcr_repertoire_file){
         if ('cdr3_nucseq' %in% colnames(data)){
             setnames(data, 'cdr3_nucseq', 'rearrangement')
         }
+        if ('sequence' %in% colnames(data)){
+            setnames(data, 'sequence', 'rearrangement')
+        }
     }
     stopifnot('rearrangement' %in% colnames(data))
     cdr3s = data$rearrangement
-    v_index = data$v_index
+    if ('v_index' %in% colnames(data)){
+        v_index = data$v_index
+    } else {
+        v_index = NULL
+    }
     return(list(cdr3s = cdr3s, v_index = v_index))
 }
 
@@ -26,7 +33,9 @@ sample_sequences <- function(output){
     set.seed(55)
     sampled = foreach(seq = unique(output$seq_index), .combine = rbind) %do% {
         subset = output[seq_index == seq]
-        subset[sample(nrow(subset), 1, prob = subset$scenario_proba_cond_seq)]
+        if (nrow(subset) > 0){
+            subset[sample(nrow(subset), 1, prob = subset$scenario_proba_cond_seq)]
+        }
     }
     return(sampled)
 }
