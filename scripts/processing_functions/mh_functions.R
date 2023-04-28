@@ -39,17 +39,22 @@ get_mh <- function(seq1, seq2, aligning_trim){
     match = c('A' = 'A/T', 'T' = 'A/T', 'C' = 'G/C', 'G' = 'G/C')
     
     max_len = nchar(seq1)
-    names = get_mh_colnames(aligning_trim, max_len)
 
-    mh = as.data.table(matrix(ncol = nchar(seq1)))
-    colnames(mh) = names
-    for (index in seq(nchar(seq1))){
-        seq1_nt = substring(seq1, index, index) 
-        seq2_nt = substring(seq2, index, index) 
-        if(seq1_nt == compl[seq2_nt]){
-            mh[, index] = match[seq1_nt]
-        } else {
-            mh[, index] = '-'
+    if (nchar(seq1) == 0 | nchar(seq2) == 0){
+        mh = data.table() 
+    } else {
+        names = get_mh_colnames(aligning_trim, max_len)
+        mh = as.data.table(matrix(ncol = nchar(seq1)))
+        colnames(mh) = names
+
+        for (index in seq(nchar(seq1))){
+            seq1_nt = substring(seq1, index, index) 
+            seq2_nt = substring(seq2, index, index) 
+            if(seq1_nt == compl[seq2_nt]){
+                mh[, index] = match[seq1_nt]
+            } else {
+                mh[, index] = '-'
+            }
         }
     }
     return(mh)
@@ -64,9 +69,8 @@ get_mh_colnames <- function(aligning_trim, positions){
     return(names)
 }
 
-fill_in_missing_mh_positions <- function(mh_dt, max_len){
+fill_in_missing_mh_positions <- function(mh_dt, max_len, aligning_trim){
     stopifnot(max_len >= ncol(mh_dt))
-    aligning_trim = substring(colnames(mh_dt)[1], 1, 6)
 
     all_names = get_mh_colnames(aligning_trim, max_len)
     not_present = all_names[!(all_names %in% colnames(mh_dt))]
@@ -80,7 +84,7 @@ fill_in_missing_mh_positions <- function(mh_dt, max_len){
 }
 
 get_mh_and_fill <- function(seq1, seq2, aligning_trim, max_len){
-    return(fill_in_missing_mh_positions(get_mh(seq1, seq2, aligning_trim), max_len)) 
+    return(fill_in_missing_mh_positions(get_mh(seq1, seq2, aligning_trim), max_len, aligning_trim)) 
 }
 
 get_mh_dataframe <- function(data, aligning_trim, aligning_gene){

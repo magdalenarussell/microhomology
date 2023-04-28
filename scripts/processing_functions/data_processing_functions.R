@@ -1,3 +1,5 @@
+source(paste0(PROJECT_PATH, '/scripts/processing_functions/data_type_functions/', DATA_TYPE, '.R'))
+
 read_all_data <- function(directory){
     require(vroom)
     all_data = data.table()
@@ -18,71 +20,10 @@ read_all_data <- function(directory){
     return(all_data)
 }
 
-filter_chain <- function(data){
-    stopifnot(LOCUS %like% 'TR')
-    if (LOCUS == 'TRA'){
-        rearr = 'VJ'
-    } else {
-        rearr = 'VDJ'
-    }
-    data = data[rearrangement_type == rearr]
-    return(data)
-}
-
-convert_adaptive_gene_names_to_imgt <- function(data, gene_col){
-    if (data[[gene_col]][1] %like% 'TCR'){
-        mapping = fread('https://raw.githubusercontent.com/kmayerb/tcrdist3/master/tcrdist/db/adaptive_imgt_mapping.csv')[species == 'human']
-        gene_type = toupper(substring(gene_col, 1, 1))
-        data[, c(gene_col, "allele") := tstrsplit(get(gene_col), "\\*0")]
-        tog = merge(data, mapping, by.x = gene_col, by.y = 'adaptive', all.x = TRUE, allow.cartesian = TRUE)
-        setnames(tog, 'imgt', paste0(tolower(gene_type), '_gene'))
-        return(tog[, -c('allele', 'species')])
-    } else {
-        return(data)
-    }
-}
-
-convert_frame_type_to_productivity <- function(data){
-    data[frame_type %in% c('Out', 'Stop'), productive := 'nonproductive']
-    data[frame_type == 'In', productive := 'productive']
-    return(data[, -c('frame_type')])
-}
-
-convert_trims <- function(data, trim_col){
-    trim_type = substring(trim_col, 1, 1)
-    if (trim_type == 'd'){
-        trim_type = substring(trim_col, 1, 2)
-    }
-    data[get(trim_col) == 'no data', paste(trim_col) := 0]
-    setnames(data, trim_col, paste0(trim_type, '_trim'))
-    return(data)
-}
-
-convert_adaptive_style_to_imgt <- function(data){
-    adaptive_cols = c('v_resolved', 'd_resolved', 'j_resolved')
-    if (any(adaptive_cols %in% colnames(data))){
-        # convert genes 
-        for (col in adaptive_cols){
-            data = convert_adaptive_gene_names_to_imgt(data, col)
-        } 
-
-        # convert productivity
-        data = convert_frame_type_to_productivity(data)
-
-        # convert trims
-        for (trim in c('v_', 'd3_', 'd5_', 'j_')){
-            data = convert_trims(data, paste0(trim, 'deletions'))
-            data[[paste0(trim, 'trim')]] = as.numeric(data[[paste0(trim, 'trim')]])
-        }
-
-        data[n1_insertions == 'no data', n1_insertions := 0]
-        data$n1_insertions = as.numeric(data$n1_insertions)
-        data = create_processing_vars(data)
-        data = filter_chain(data)
-        return(data)
-    } else {
-        return(data)
-    }
+process_data <- function(data, filter_frequency = FALSE){
+    data = reformat_data(data)
+    filtered = filter_data(data, filter_frequency)
+    return(filtered)
 }
 
 filter_data <- function(data, filter_frequency = FALSE){
@@ -99,20 +40,21 @@ filter_data <- function(data, filter_frequency = FALSE){
         subset = subset[!is.na(get(gene))] 
     }
 
-    cols = c('sample_name', 'v_trim', 'j_trim', 'v_gene', 'j_gene', 'n1_insertions', 'zero_process', 'zero_insert', 'productive')
+    cols = c('v_trim', 'j_trim', 'v_gene', 'j_gene', 'vj_insert', 'productive', 'v_pnuc', 'j_pnuc')
+    cols = cols[cols %in% colnames(subset)]
     subset = subset[, ..cols]
 
     if (TRIM_TYPE %like% 'trim'){
         # bound to reasonable trims
-        subset = subset[get(TRIM_TYPE) <= 24]
-        subset[get(TRIM_TYPE) < 0 , paste(TRIM_TYPE) := 0]
+        subset = subset[get(TRIM_TYPE) <= UPPER_TRIM_BOUND]
+        subset = subset[get(TRIM_TYPE) >= LOWER_TRIM_BOUND]
     }
 
     # remove delta
     subset = subset[!(get(GENE_NAME) %like% 'TRD')]
     subset = subset[!(get(JOINING_GENE) %like% 'TRD')]
 
-    subset[, total_count := .N, by = .(sample_name, productive)]
+    subset[, total_count := .N, by = .(productive)]
     if (filter_frequency == TRUE){
         subset = filter_by_freq(subset, output_uncondensed = TRUE)
     }
@@ -121,9 +63,9 @@ filter_data <- function(data, filter_frequency = FALSE){
 
 get_unobserved_observations <- function(data){
     # get unobserved observations
-    cols = c('v_gene', 'j_gene', 'sample_name', TRIM_TYPE, 'total_count')
-    no_trim_cols = cols[!(cols %in% c('sample_name', TRIM_TYPE, 'total_count'))]
-    count_pair = unique(data[, c('sample_name', 'total_count')])
+    cols = c('v_gene', 'j_gene', TRIM_TYPE, 'total_count')
+    no_trim_cols = cols[!(cols %in% c(TRIM_TYPE, 'total_count'))]
+    count_pair = unique(data[, c('total_count')])
     # get unique genes
     unique_obs = unique(data[,..no_trim_cols])
 
@@ -131,13 +73,15 @@ get_unobserved_observations <- function(data){
     trim_lengths = seq(0,max(data[[TRIM_TYPE]]))
     desired_obs = unique_obs %>%
             mutate(trim_length = list(trim_lengths)) %>%
-            mutate(sample_name = list(unique(data$sample_name))) %>%
             unnest(cols = c(trim_length)) %>%
-            unnest(cols = c(sample_name)) %>%
             as.data.table()
     setnames(desired_obs, 'trim_length', TRIM_TYPE)
     # get unobserved subset
-    desired_obs = merge(desired_obs, count_pair)
+    if (nrow(count_pair) == 1){
+        desired_obs$total_count = count_pair$total_count
+    } else {
+        desired_obs = merge(desired_obs, count_pair)
+    }
     unobserved = desired_obs[!data, on = cols]
     unobserved$count = 0
     unobserved$productive = PRODUCTIVITY
@@ -149,20 +93,18 @@ condense_data <- function(data, filter = TRUE){
     subset = filter_by_freq(data, filter)
     
     # get average trimming profiles
-    cols = c(TRIM_TYPE, 'v_gene', 'j_gene', 'productive', 'avg_paired_freq', 'subj_count')
+    cols = c(TRIM_TYPE, 'v_gene', 'j_gene', 'productive')
 
     subset[, p_trim_given_gene := count/paired_gene_count]
     avg = subset[, mean(p_trim_given_gene), by = cols]     
     setnames(avg, 'V1', 'avg_prob')
-    avg[avg_paired_freq < 5e-04, low_freq := TRUE]
-    avg[avg_paired_freq >= 5e-04, low_freq := FALSE]
     return(avg)
 }
 
 filter_by_freq <- function(data, filter = TRUE, output_uncondensed = FALSE){
     orig_data = data
     # get counts
-    cols = c('sample_name', TRIM_TYPE, 'v_gene', 'j_gene', 'productive', 'total_count')
+    cols = c(TRIM_TYPE, 'v_gene', 'j_gene', 'productive', 'total_count')
     data = data[, .N, by = cols]
     setnames(data, 'N', 'count')
 
@@ -172,22 +114,16 @@ filter_by_freq <- function(data, filter = TRUE, output_uncondensed = FALSE){
     }
 
     # get frequencies
-    data[, v_gene_count := sum(count), by = .(sample_name, v_gene, productive)]
-    data[, j_gene_count := sum(count), by = .(sample_name, j_gene, productive)]
-    data[, paired_gene_count := sum(count), by = .(sample_name, v_gene, j_gene, productive)]
+    data[, v_gene_count := sum(count), by = .(v_gene, productive)]
+    data[, j_gene_count := sum(count), by = .(j_gene, productive)]
+    data[, paired_gene_count := sum(count), by = .(v_gene, j_gene, productive)]
     data[, paired_freq := paired_gene_count/total_count]
 
     # filter by frequencies
     max_trims = length(unique((data[[TRIM_TYPE]])))
     if (isTRUE(filter)){
-        subset = data[paired_freq > 5e-04]
-        subset[, subj_count := .N/max_trims, by = .(v_gene, j_gene, productive)]
-        thresh = ceiling(0.75*length(unique(subset$sample_name)))
-        subset = subset[subj_count >= thresh]
-    } else {
-        subset = data
-        subset[, subj_count := .N/max_trims, by = .(v_gene, j_gene, productive)]
-    }
+        subset = data[paired_gene_count > 5000]
+    } 
     subset[, avg_paired_freq := mean(paired_freq), by = .(v_gene, j_gene, productive)]
     if (output_uncondensed == TRUE){
         subset[, temp := paste0(v_gene, j_gene)]
@@ -210,30 +146,24 @@ calculate_sum_of_abs_diffs <- function(condensed_data, original_condensed_data, 
     condensed_data = get_original_mean_curve(original_condensed_data, condensed_data, gene_type)
     condensed_data[, abs_diff := abs(mean_p_trim_given_pair - avg_prob)]
     if (isFALSE(repeated)){
-        temp = condensed_data[, sum(abs_diff), by = .(v_gene, j_gene, productive, avg_paired_freq, subj_count)]
+        temp = condensed_data[, sum(abs_diff), by = .(v_gene, j_gene, productive)]
     } else {
-        temp = condensed_data[, sum(abs_diff), by = .(v_gene, j_gene, productive, avg_paired_freq, subj_count, draw)]
+        temp = condensed_data[, sum(abs_diff), by = .(v_gene, j_gene, productive, draw)]
     }
     setnames(temp, 'V1', 'sum_abs_diff')
     return(temp)
 }
 
 bootstrap_diffs <- function(uncondensed_data, filter = TRUE){
-    uncondensed_data[, total := .N, by = .(sample_name)]
-    sample = uncondensed_data[uncondensed_data[, sample(.I, .N, replace = TRUE), by = sample_name]$V1]
+    sample = uncondensed_data[uncondensed_data[, sample(.I, .N, replace = TRUE)]$V1]
     condensed = condense_data(sample, filter) 
     return(list(condensed = condensed, uncondensed = sample))
 }
 
 fit_multinom_models <- function(uncondensed_data, joining_gene = JOINING_GENE){
     require(nnet)
-    if (length(unique(uncondensed_data$sample_name)) > 1){
-        null_form = as.formula(paste0(TRIM_TYPE, '~ sample_name'))
-        form = as.formula(paste0(TRIM_TYPE, '~ sample_name + ', joining_gene))
-    } else {
-        null_form = as.formula(paste0('as.factor(', TRIM_TYPE, ') ~ 1'))
-        form = as.formula(paste0('as.factor(',TRIM_TYPE, ') ~ as.factor(', joining_gene, ')'))
-    }
+    null_form = as.formula(paste0('as.factor(', TRIM_TYPE, ') ~ 1'))
+    form = as.formula(paste0('as.factor(',TRIM_TYPE, ') ~ as.factor(', joining_gene, ')'))
 
     if (length(unique(uncondensed_data[[TRIM_TYPE]])) > 2){
         null = multinom(null_form, data = uncondensed_data, maxit = 1000, MaxNWts=5000)
@@ -284,10 +214,8 @@ convert_model_coefs_to_dt <- function(model){
 }
 
 get_predicted_probs <- function(model, uncondensed_data){
-    interaction = interaction(unique(uncondensed_data$sample_name), unique(uncondensed_data[[JOINING_GENE]]))
-    df = data.table(temp = levels(interaction))
-    df[, sample_name := sapply(temp, function(x) str_split(x, '\\.')[[1]][1])]
-    df[, paste(JOINING_GENE) := sapply(temp, function(x) str_split(x, '\\.')[[1]][2])]
+    df = data.table(temp= unique(uncondensed_data[[JOINING_GENE]]))
+    setnames(df, 'temp', JOINING_GENE)
 
     if (any(class(model) %like% 'glm')){
         pred = as.data.table(predict(model, newdata = df, type = 'response'))
@@ -297,9 +225,9 @@ get_predicted_probs <- function(model, uncondensed_data){
 
     pred = cbind(df, pred)
 
-    long_cols = c('sample_name', JOINING_GENE)
+    long_cols = c(JOINING_GENE)
 
-    pred_long = pred[, -c('temp')] %>%
+    pred_long = pred %>%
         pivot_longer(!any_of(long_cols), names_to = TRIM_TYPE, values_to = 'prob')%>%
         as.data.table()
     
@@ -310,14 +238,67 @@ get_predicted_probs <- function(model, uncondensed_data){
     return(avg)
 }
 
-create_processing_vars <- function(rep_data){
-    # create var for zero processing
-    rep_data[v_trim == 0 & j_trim == 0 & n1_insertions == 0, zero_process := TRUE]
-    rep_data[!(v_trim == 0 & j_trim == 0 & n1_insertions == 0), zero_process := FALSE]
+get_frames_for_pair <- function(v_seq, v_frame, v_trim, j_seq, j_frame, j_trim){
+    # get processed V-gene sequence
+    adjusted_v_seq = substring(v_seq, v_frame) 
+    if (v_trim < 0){
+        adjusted_v_seq = paste0(adjusted_v_seq, paste0(rep('X', -1*v_trim), collapse = ''), collapse = '')
+    } else {
+        adjusted_v_seq = substring(adjusted_v_seq, 1, nchar(adjusted_v_seq) - v_trim)
+    }
 
-    # create var for zero insertions
-    rep_data[n1_insertions == 0, zero_insert := TRUE]
-    rep_data[!(n1_insertions == 0), zero_insert := FALSE]
-    
-    return(rep_data)
+    # get processed J-gene sequence
+    j_extra = (nchar(j_seq) - (j_frame - 1))%%3
+    adjusted_j_seq = substring(j_seq, 1, nchar(j_seq) - j_extra)
+    if (j_trim < 0){
+        adjusted_j_seq = paste0(paste0(rep('X', -1*j_trim), collapse = ''), adjusted_j_seq, collapse = '')
+    } else {
+        adjusted_j_seq = substring(adjusted_j_seq, j_trim + 1)
+    }
+
+    tog = paste0(adjusted_v_seq, adjusted_j_seq, collapse = '')
+    frame = nchar(tog) %% 3
+    if (frame == 0){
+        frame_type = 'In'
+    } else {
+        frame_type = 'Out'
+    }
+    return(frame_type)
+}
+
+get_all_frames <- function(){
+    frames = fread('https://raw.githubusercontent.com/phbradley/conga/master/conga/tcrdist/db/combo_xcr.tsv')[organism == 'human' & chain == substring(LOCUS, 3, 3)]
+
+    v = frames[region == 'V'][, c('id', 'frame', 'nucseq')]
+    colnames(v) = c('v_gene', 'v_frame', 'v_seq')
+    j = frames[region == 'J'][, c('id', 'frame', 'nucseq')]
+    colnames(j) = c('j_gene', 'j_frame', 'j_seq')
+
+    v$dummy = 1
+    j$dummy = 1
+
+    pairs = merge(v, j, by = 'dummy', allow.cartesian = TRUE)
+
+    trims = data.table(v_trim = rep(seq(LOWER_TRIM_BOUND, UPPER_TRIM_BOUND), each = (UPPER_TRIM_BOUND - LOWER_TRIM_BOUND) + 1), j_trim = rep(seq(LOWER_TRIM_BOUND, UPPER_TRIM_BOUND), (UPPER_TRIM_BOUND - LOWER_TRIM_BOUND) + 1))
+    trims$dummy = 1
+
+    pairs = merge(pairs, trims, by = 'dummy', allow.cartesian = TRUE)[, -c('dummy')]
+
+    pairs[, frame_type := apply(.SD, 1, function(x) get_frames_for_pair(x[1], x[2], x[3], x[4], x[5], x[6])), .SDcols = c("v_seq", "v_frame", "v_trim", "j_seq", "j_frame", "j_trim")]
+
+    return(pairs[, -c('v_seq', 'j_seq')])
+}
+
+get_frames_data <- function(){
+    path = file.path(PROJECT_PATH, 'data')
+    dir.create(path)
+    file_name = file.path(path, paste0(LOCUS, '_paired_frame_data.tsv'))
+
+    if (!file.exists(file_name)) {
+        frame_data = get_all_frames()
+        fwrite(frames_data, file_name, sep = '\t')
+    } else {
+        frame_data = fread(file_name)
+    }
+    return(frame_data)
 }

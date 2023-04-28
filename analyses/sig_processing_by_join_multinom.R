@@ -4,43 +4,51 @@ library(foreach)
 library(doParallel)
 library(tidyverse)
 library(data.table)
-setDTthreads(1)
 library(cowplot)
 library(RhpcBLASctl)
 
 args = commandArgs(trailingOnly=TRUE)
 
-LOCUS <<- args[1]
-stopifnot(LOCUS %in% c('TRA', 'TRA_igor'))
-TRIM_TYPE <<- args[2] 
-JOINING_GENE <<- args[3]
-DATA_DIR <<- args[4]
-PRODUCTIVITY <<- args[5] 
-NCPU <<- as.numeric(10)
+DATA_TYPE <<- args[1]
+LOCUS <<- args[2]
+stopifnot(LOCUS %in% c('TRB', 'TRA', 'TRA_igor'))
+TRIM_TYPE <<- args[3] 
+JOINING_GENE <<- args[4]
+DATA_DIR <<- args[5]
+NT_COUNT <<- args[6]
+if (NT_COUNT != 'all'){
+    NT_COUNT <<- as.numeric(NT_COUNT)
+}
+PRODUCTIVITY <<- args[7] 
+NCPU <<- as.numeric(args[8]) 
 if (TRIM_TYPE %like% 'trim'){
     GENE_NAME <<- paste0(substring(TRIM_TYPE, 1, 1), '_gene')
 } else {
     type = c('v_gene', 'j_gene')
     GENE_NAME <<- type[type != JOINING_GENE] 
 }
+LOWER_TRIM_BOUND <<- as.numeric(args[9]) 
+UPPER_TRIM_BOUND <<- as.numeric(args[10]) 
 
 blas_set_num_threads(NCPU)
+setDTthreads(NCPU)
 
 path = paste0(PROJECT_PATH, '/plots/trim_by_join')
 dir.create(path, recursive = TRUE)
 
-source(paste0(PROJECT_PATH, '/scripts/data_processing_functions.R'))
-source(paste0(PROJECT_PATH, '/scripts/joining_gene_similarity_functions.R'))
-source(paste0(PROJECT_PATH, '/scripts/plotting_functions.R'))
+source(paste0(PROJECT_PATH, '/scripts/processing_functions/data_processing_functions.R'))
+source(paste0(PROJECT_PATH, '/scripts/analysis_functions/joining_gene_similarity_functions.R'))
+source(paste0(PROJECT_PATH, '/scripts/analysis_functions/trimming_distribution_similarity_functions.R'))
+source(paste0(PROJECT_PATH, '/scripts/plotting_functions/plotting_functions.R'))
+source(paste0(PROJECT_PATH, '/scripts/processing_functions/mh_functions.R'))
 
 # Compile repertoire data for all subjects
 rep_data = read_all_data(directory = DATA_DIR)
-rep_data = convert_adaptive_style_to_imgt(rep_data) 
-rep_data_subset = filter_data(rep_data, filter_frequency = TRUE)
+rep_data_subset = process_data(rep_data)
 condensed_rep_data = condense_data(rep_data_subset, filter = TRUE) 
 
 # order genes by frequency
-top_genes = unique(condensed_rep_data[order(-avg_paired_freq)][[GENE_NAME]])
+top_genes = unique(condensed_rep_data[[GENE_NAME]])
 
 # Create a trimming distribution plot for each gene
 multinom_result = data.table()

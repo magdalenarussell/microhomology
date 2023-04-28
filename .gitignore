@@ -2,9 +2,10 @@
 _ignore/
 plots/
 .vscode/
+data/
 
 # temporary files to ignore
 temp*
-*.ipynb
 .nfs*
 slurm*
+
