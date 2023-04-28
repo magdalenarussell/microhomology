@@ -21,12 +21,14 @@ if (NT_COUNT != 'all'){
 }
 PRODUCTIVITY <<- args[7] 
 NCPU <<- as.numeric(args[8]) 
+
 if (TRIM_TYPE %like% 'trim'){
     GENE_NAME <<- paste0(substring(TRIM_TYPE, 1, 1), '_gene')
 } else {
     type = c('v_gene', 'j_gene')
     GENE_NAME <<- type[type != JOINING_GENE] 
 }
+
 LOWER_TRIM_BOUND <<- as.numeric(args[9]) 
 UPPER_TRIM_BOUND <<- as.numeric(args[10]) 
 

@@ -21,6 +21,7 @@ if (NT_COUNT != 'all'){
 }
 PRODUCTIVITY <<- args[7] 
 NCPU <<- as.numeric(args[8]) 
+
 if (TRIM_TYPE %like% 'trim'){
     GENE_NAME <<- paste0(substring(TRIM_TYPE, 1, 1), '_gene')
 } else {
