@@ -9,6 +9,21 @@ filter_chain <- function(data){
     return(data)
 }
 
+convert_inserts <- function(data){
+    stopifnot(LOCUS %like% 'TR')
+    if (LOCUS == 'TRA'){
+        data[n1_insertions == 'no data', n1_insertions := 0]
+        data$vj_insert = as.numeric(data$n1_insertions)
+    } else {
+        data[n1_insertions == 'no data', n1_insertions := 0]
+        data[n2_insertions == 'no data', n2_insertions := 0]
+
+        data$vd_insert = as.numeric(data$n1_insertions)
+        data$dj_insert = as.numeric(data$n2_insertions)
+    }
+    return(data)
+}
+
 convert_adaptive_gene_names_to_imgt <- function(data, gene_col){
     if (data[[gene_col]][1] %like% 'TCR'){
         mapping = fread('https://raw.githubusercontent.com/kmayerb/tcrdist3/master/tcrdist/db/adaptive_imgt_mapping.csv')[species == 'human']
@@ -55,8 +70,7 @@ convert_adaptive_style_to_imgt <- function(data){
             data[[paste0(trim, 'trim')]] = as.numeric(data[[paste0(trim, 'trim')]])
         }
 
-        data[vj_insert == 'no data', vj_insert := 0]
-        data$vj_insert = as.numeric(data$vj_insert)
+        data = convert_inserts(data)
         data = filter_chain(data)
     }
     return(data)
