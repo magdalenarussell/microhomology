@@ -12,7 +12,10 @@ MARG_PATH = sys.argv[6]
 
 # load nonproductive sequences and model
 seqs = pd.read_csv(OUTPUT_DIR + '/cdr3_seqs.txt', sep = '\t', header = None)
-new_model = p3.IgorModel.load_from_txt(PARMS_PATH, MARG_PATH)
+if PARMS_PATH == 'default' and MARG_PATH == 'default':
+    new_model = p3.get_default_IgorModel("human", "tcr_alpha")
+else:
+    new_model = p3.IgorModel.load_from_txt(PARMS_PATH, MARG_PATH)
 print('finished loading sequences and model')
 
 # align and annotate sequences

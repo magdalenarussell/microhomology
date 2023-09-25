@@ -24,6 +24,6 @@ counts = cdr3_data$counts
 output_location = file.path(output_directory)
 dir.create(output_location, recursive = TRUE, showWarnings = FALSE)
 
-fwrite(as.data.table(cdr3s), file.path(output_location, paste0(subject_ID, '_cdr3_seqs.tsv')), sep = '\t', col.names = FALSE)
+fwrite(as.data.table(cdr3s), file.path(output_location, paste0(subject_ID, '_cdr3_seqs.txt')), sep = '\t', col.names = FALSE)
 
 cat(output_location)

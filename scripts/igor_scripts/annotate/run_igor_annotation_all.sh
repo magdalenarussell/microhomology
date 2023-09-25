@@ -19,11 +19,11 @@ echo "set vars"
 echo $RAW_FILE
 echo $TEMP_DIR
 
-OUTPUT_LOCATION=$(Rscript scripts/igor_scripts/igor_preprocessing.R $RAW_FILE $TEMP_DIR $ADAPTIVE $LOCUS $NCPU)
+OUTPUT_LOCATION=$(Rscript scripts/igor_scripts/annotate/igor_preprocessing.R $RAW_FILE $TEMP_DIR $ADAPTIVE $LOCUS $NCPU)
 echo "got location"
 
 # submit job to run igor for specified individual, sample annotations, and reformat file
-python scripts/igor_scripts/run_igor_custom.py $OUTPUT_LOCATION $OUTPUT_DIR $ANNOTATION_COUNT $NCPU $MODEL_PARAMS $MODEL_MARG
+python scripts/igor_scripts/annotate/run_igor_annotation.py $OUTPUT_LOCATION $OUTPUT_DIR $ANNOTATION_COUNT $NCPU $MODEL_PARAMS $MODEL_MARG
 echo "finished"
 
 # delete unnessary files

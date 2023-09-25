@@ -21,7 +21,7 @@ all_seqs = pd.concat(df_list, ignore_index=True)
 # Get Genomic Germline templates from IMGT
 imgt_species = 'Homo+sapiens'
 imgt_chain = 'TRA'
-hb_genomic = pd.read_csv('_ignore/imgt_tcra_sequences.tsv', sep = '\t')
+hb_genomic = pd.read_csv('/home/mrussel2/microhomology/_ignore/imgt_tcra_sequences.tsv', sep = '\t')
 hb_genomic = hb_genomic.drop(columns = ['names'])
 hb_genomic.columns = ['value', 'name']
 hb_genomic_v = hb_genomic[hb_genomic.name.str[3] == 'V'].reset_index(drop = True)
@@ -32,7 +32,7 @@ hb_genomic_dict = {'V':hb_genomic_v, 'J':hb_genomic_j}
 # create new model
 hb_mdl_0 = p3.IgorModel.make_default_from_Dataframe_dict(hb_genomic_dict)
 
-hb_mdl_new, df_likelihoods = p3.infer(all_seqs, hb_mdl_0, N_iter=20, return_likelihoods=True)
+hb_mdl_new, df_likelihoods = p3.infer(all_seqs, hb_mdl_0, N_iter=10, return_likelihoods=True)
 
 marg_name = final_output_directory + '/model_' + str(sample_count) + '_marginals.txt'
 parms_name = final_output_directory + '/model_' + str(sample_count) + '_parms.txt'

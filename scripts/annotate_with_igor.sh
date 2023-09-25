@@ -22,7 +22,7 @@ for RAW_FILE in $RAW_FILE_PATH/*.tsv; do
     mkdir $TEMP_OUTPUT_FILE
     TEMP_OUTPUT_FILE="$TEMP_OUTPUT_FILE/running" 
 
-    COMMAND="sbatch -c $NCPU -p $PARTITION -q $PARTITION scripts/igor_scripts/run_igor_all_custom.sh $RAW_FILE $TEMP_DIR $ADAPTIVE $LOCUS $OUTPUT_DIR $MODEL_PARAMS $MODEL_MARG $ANNOTATION_COUNT $NCPU"
+    COMMAND="sbatch -c $NCPU -p $PARTITION -q $PARTITION scripts/igor_scripts/annotate/run_igor_annotation_all.sh $RAW_FILE $TEMP_DIR $ADAPTIVE $LOCUS $OUTPUT_DIR $MODEL_PARAMS $MODEL_MARG $ANNOTATION_COUNT $NCPU"
     echo $COMMAND
 
     $COMMAND > $TEMP_OUTPUT_FILE
