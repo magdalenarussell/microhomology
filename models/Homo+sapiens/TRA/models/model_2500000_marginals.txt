@@ -1,1 +1,0 @@
-/fh/fast/matsen_e/shared/tcr-gwas/soto_alpha/models/Homo+sapiens/TRA/models/model_2500000_marginals.txt
