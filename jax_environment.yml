@@ -28,11 +28,11 @@ dependencies:
   - bwidget=1.9.14=ha770c72_1
   - bzip2=1.0.8=h7f98852_4
   - c-ares=1.19.1=hd590300_0
-  - ca-certificates=2023.7.22=hbcca054_0
+  - ca-certificates=2024.2.2=hbcca054_0
   - cached-property=1.5.2=hd8ed1ab_1
   - cached_property=1.5.2=pyha770c72_1
   - cairo=1.16.0=hbbf8b49_1016
-  - certifi=2023.7.22=pyhd8ed1ab_0
+  - certifi=2024.2.2=pyhd8ed1ab_0
   - cffi=1.15.1=py311h409f033_3
   - charset-normalizer=3.2.0=pyhd8ed1ab_0
   - colorama=0.4.6=pyhd8ed1ab_0
@@ -43,6 +43,7 @@ dependencies:
   - debugpy=1.8.0=py311hb755f60_0
   - decorator=5.1.1=pyhd8ed1ab_0
   - defusedxml=0.7.1=pyhd8ed1ab_0
+  - dill=0.3.7=pyhd8ed1ab_0
   - entrypoints=0.4=pyhd8ed1ab_0
   - exceptiongroup=1.1.3=pyhd8ed1ab_0
   - executing=1.2.0=pyhd8ed1ab_0
@@ -157,10 +158,11 @@ dependencies:
   - notebook-shim=0.2.3=pyhd8ed1ab_0
   - numpy=1.25.2=py311h64a7726_0
   - openjpeg=2.5.0=hfec8fc6_2
-  - openssl=3.1.3=hd590300_0
+  - openssl=3.2.1=hd590300_0
   - opt_einsum=3.3.0=pyhd8ed1ab_1
   - overrides=7.4.0=pyhd8ed1ab_0
   - packaging=23.1=pyhd8ed1ab_0
+  - pandarallel=1.6.5=pyhd8ed1ab_0
   - pandas=2.1.0=py311h320fe9a_0
   - pandoc=3.1.3=h32600fe_0
   - pandocfilters=1.5.0=pyhd8ed1ab_0
@@ -210,6 +212,7 @@ dependencies:
   - r-broom=1.0.5=r43hc72bb7e_1
   - r-bslib=0.5.1=r43hc72bb7e_0
   - r-cachem=1.0.8=r43h57805ef_1
+  - r-cairo=1.6_1=r43he7aa0cf_0
   - r-callr=3.7.3=r43hc72bb7e_1
   - r-caret=6.0_94=r43h57805ef_1
   - r-cellranger=1.1.0=r43hc72bb7e_1006
@@ -222,6 +225,7 @@ dependencies:
   - r-colorspace=2.1_0=r43h57805ef_1
   - r-commonmark=1.9.0=r43h57805ef_1
   - r-conflicted=1.2.0=r43h785f33e_1
+  - r-cowplot=1.1.1=r43hc72bb7e_2
   - r-cpp11=0.4.6=r43hc72bb7e_0
   - r-crayon=1.5.2=r43hc72bb7e_2
   - r-crul=1.4.0=r43h785f33e_1
@@ -229,6 +233,7 @@ dependencies:
   - r-data.table=1.14.8=r43h029312a_2
   - r-dbi=1.1.3=r43hc72bb7e_2
   - r-dbplyr=2.3.3=r43hc72bb7e_0
+  - r-dfidx=0.0_5=r43hc72bb7e_2
   - r-diagram=1.6.5=r43ha770c72_2
   - r-digest=0.6.33=r43ha503ecb_0
   - r-dplyr=1.1.3=r43ha503ecb_0
@@ -245,12 +250,15 @@ dependencies:
   - r-foreach=1.5.2=r43hc72bb7e_2
   - r-foreign=0.8_85=r43h57805ef_0
   - r-formatr=1.14=r43hc72bb7e_1
+  - r-formula=1.2_5=r43hc72bb7e_1
   - r-fs=1.6.3=r43ha503ecb_0
   - r-future=1.33.0=r43hc72bb7e_0
   - r-future.apply=1.11.0=r43hc72bb7e_1
   - r-gargle=1.5.2=r43h785f33e_0
+  - r-gbrd=0.4_11=r43hc72bb7e_1005
   - r-generics=0.1.3=r43hc72bb7e_2
   - r-ggplot2=3.4.3=r43hc72bb7e_0
+  - r-ggrepel=0.9.3=r43ha503ecb_1
   - r-gistr=0.9.0=r43hc72bb7e_2
   - r-glmnet=4.1_8=r43hcf54a89_0
   - r-globals=0.16.2=r43hc72bb7e_1
@@ -286,6 +294,7 @@ dependencies:
   - r-lazyeval=0.2.2=r43h57805ef_4
   - r-lifecycle=1.0.3=r43hc72bb7e_2
   - r-listenv=0.9.0=r43hc72bb7e_1
+  - r-lmtest=0.9_40=r43h61816a4_2
   - r-lobstr=1.1.2=r43ha503ecb_3
   - r-lubridate=1.9.2=r43h57805ef_2
   - r-magrittr=2.0.3=r43h57805ef_2
@@ -295,6 +304,7 @@ dependencies:
   - r-memoise=2.0.1=r43hc72bb7e_2
   - r-mgcv=1.9_0=r43h316c678_0
   - r-mime=0.12=r43h57805ef_2
+  - r-mlogit=1.1_1=r43hc72bb7e_2
   - r-modelmetrics=1.2.2.2=r43ha503ecb_3
   - r-modelr=0.1.11=r43hc72bb7e_1
   - r-munsell=0.5.0=r43hc72bb7e_1006
@@ -323,10 +333,12 @@ dependencies:
   - r-ragg=1.2.5=r43h85cdef0_2
   - r-randomforest=4.7_1.1=r43h61816a4_2
   - r-rappdirs=0.3.3=r43h57805ef_2
+  - r-rbibutils=2.2.16=r43h57805ef_0
   - r-rbokeh=0.5.2=r43hc72bb7e_3
   - r-rcolorbrewer=1.1_3=r43h785f33e_2
   - r-rcpp=1.0.11=r43h7df8631_0
   - r-rcppeigen=0.3.3.9.3=r43h08d816e_1
+  - r-rdpack=2.6=r43hc72bb7e_0
   - r-readr=2.1.4=r43ha503ecb_1
   - r-readxl=1.4.3=r43ha5c9fba_0
   - r-recipes=1.0.8=r43hc72bb7e_0
@@ -349,6 +361,7 @@ dependencies:
   - r-sourcetools=0.1.7_1=r43ha503ecb_1
   - r-spatial=7.3_17=r43h57805ef_0
   - r-squarem=2021.1=r43hc72bb7e_2
+  - r-statmod=1.5.0=r43hd8f1df9_1
   - r-stringi=1.7.12=r43hc0c3e09_2
   - r-stringr=1.5.0=r43h785f33e_1
   - r-survival=3.5_7=r43h57805ef_0
@@ -432,4 +445,13 @@ dependencies:
   - zipp=3.16.2=pyhd8ed1ab_0
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.5=hfc55251_0
+  - pip:
+    - airr==1.5.0
+    - appdirs==1.4.4
+    - biopython==1.83
+    - click==8.1.7
+    - networkx==3.2.1
+    - pygor3==0.3.2
+    - xarray==2023.12.0
+    - yamlordereddictloader==0.4.2
 prefix: /home/mrussel2/miniconda3/envs/mechanistic-trimming_jax
