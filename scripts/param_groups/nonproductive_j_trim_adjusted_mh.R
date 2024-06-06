@@ -1,0 +1,11 @@
+TRIM_TYPE <<- 'j_trim_adjusted_mh'
+PRODUCTIVITY <<- 'nonproductive'
+MOTIF_TYPE <<- 'unbounded'
+GENE_NAME <<- 'j_gene'
+UPPER_TRIM_BOUND <<- 14 
+LOWER_TRIM_BOUND <<- -2
+INSERTIONS <<- 'zero'
+MODEL_GROUP <<- 'all_subjects'
+GENE_WEIGHT_TYPE <<- 'p_gene_pooled'
+SAMPLE_ANNOT <<- TRUE
+ONLY_NONPROD_SITES <<- TRUE
