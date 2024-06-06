@@ -6,7 +6,7 @@ Everything R 4.1.3 and/or Python 3.11.5 based. Python and R packages that are re
 
 ```bash 
 conda env create -f environment.yml
-conda activate mechanistic-trimming_jax
+conda activate microhomology_jax
 ```
 
 You will also need to install IGoR if you wish to annotate sequences using IGoR (Marcou et.al Nature Communications 2018)

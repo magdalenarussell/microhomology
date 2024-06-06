@@ -1,4 +1,0 @@
-[submodule "mechanistic-trimming"]
-	path = mechanistic-trimming
-	url = git@github.com:magdalenarussell/mechanistic-trimming.git
-    branch = mh_main
