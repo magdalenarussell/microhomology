@@ -243,7 +243,10 @@ sum_trim_observations <- function(condensed_tcr_dataframe, gene_type = GENE_NAME
     if ('index' %in% colnames(condensed_tcr_dataframe)){
         cols = c(cols, 'index', 'processed_sequence')
     }
-    summed = condensed_tcr_dataframe[, sum(count), by = cols]
+    if ('frame_type' %in% colnames(condensed_tcr_dataframe)){
+        cols = c(cols, 'frame_type', 'frame_stop')
+    }
+    summed = condensed_tcr_dataframe[, sum(count, na.rm = TRUE), by = cols]
     setnames(summed, 'V1', 'count')
     return(summed)
 }
@@ -595,6 +598,13 @@ aggregate_all_subject_data <- function(directory = get_subject_motif_output_loca
 }
 
 inner_aggregation_processing <- function(together, gene_type, trim_type, only_nonprod_sites = ONLY_NONPROD_SITES, sample_annotation = SAMPLE_ANNOT){
+    # recondense across all individuals
+    together[, index := .GRP, by = .(v_gene, j_gene, processed_sequence)]
+    together = sum_trim_observations(together, gene_type, trim_type) 
+    if (only_nonprod_sites == TRUE){
+        together[frame_type == 'In' & frame_stop == FALSE, count := NA]
+    }
+
     if (MODEL_TYPE %like% 'dna_shape') {
         together = convert_data_to_motifs(together, left_window_size = LEFT_NUC_MOTIF_COUNT + 2, right_window_size = RIGHT_NUC_MOTIF_COUNT + 2)
         processed_motif_data = process_data_for_model_fit(together, gene_type = gene_type, trim_type = trim_type)

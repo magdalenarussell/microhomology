@@ -690,6 +690,8 @@ class TwoStepConditionalLogisticRegressor(TwoStepDataTransformer):
         self.choice2_variable_matrix = None
         self.counts_matrix = None
         self.nonrepeat_grp_matrix = None
+        self.all_site_mask_matrix = None
+        self.prod_mask_matrix = None
         with open(file_path, 'wb') as file:
             # Serialize and save the object to the file
             dill.dump(self, file)

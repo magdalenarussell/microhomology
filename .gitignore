@@ -8,3 +8,4 @@ data/
 temp*
 .nfs*
 slurm*
+__pycache__
