@@ -2,7 +2,6 @@ LOCUS <<- 'beta'
 DATA_TYPE <<- 'adaptive'
 source(paste0(MOD_PROJECT_PATH, '/scripts/locus_specific_functions/', LOCUS, '.R'))
 source(paste0(MOD_PROJECT_PATH, '/scripts/data_type_functions/', DATA_TYPE, '.R'))
-source(paste0(MOD_PROJECT_PATH,'/scripts/annotation_specific_functions/frame_data_functions/adjusted_frames.R'))
 
 extract_subject_ID <- function(tcr_repertoire_file_path){
     split_name = str_split(tcr_repertoire_file_path, "/")[[1]]
