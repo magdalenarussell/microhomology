@@ -24,7 +24,7 @@ L2 <<- 'True'
 INT_MH_PARAMS <<- c(0, 0.1, 1, 10)
 
 
-source(paste0(MOD_PROJECT_PATH,'/analysis_scripts/intermediate-mh_signal_simulator_scripts/intermediate-mh_simulator_functions.R'))
+source(paste0(MOD_PROJECT_PATH,'/mh_simulation_scripts/intermediate-mh_signal_simulator_scripts/intermediate-mh_simulator_functions.R'))
 
 probs = data.table()
 

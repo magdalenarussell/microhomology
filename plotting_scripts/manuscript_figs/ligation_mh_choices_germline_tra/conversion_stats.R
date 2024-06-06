@@ -30,7 +30,7 @@ MODEL_TYPE <<- 'motif_two-side-base-count-beyond_ligation-mh'
 
 L2 <<- 'False'
 
-source(paste0(MOD_PROJECT_PATH,'/analysis_scripts/ligation-mh_signal_simulator_scripts/ligation-mh_simulator_functions.R'))
+source(paste0(MOD_PROJECT_PATH,'/mh_simulation_scripts/ligation-mh_signal_simulator_scripts/ligation-mh_simulator_functions.R'))
 source(paste0(MOD_PROJECT_PATH,'/scripts/data_compilation_functions.R'))
 source(paste0(MOD_PROJECT_PATH,'/plotting_scripts/plotting_functions.R'))
 

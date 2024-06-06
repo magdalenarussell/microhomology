@@ -24,7 +24,7 @@ L2 <<- 'False'
 LIGATION_PARAMS <<- c(0, 0.1, 1, 10)
 
 
-source(paste0(MOD_PROJECT_PATH,'/analysis_scripts/ligation-mh_signal_simulator_scripts/ligation-mh_simulator_functions.R'))
+source(paste0(MOD_PROJECT_PATH,'/mh_simulation_scripts/ligation-mh_signal_simulator_scripts/ligation-mh_simulator_functions.R'))
 
 lig_probs = data.table()
 

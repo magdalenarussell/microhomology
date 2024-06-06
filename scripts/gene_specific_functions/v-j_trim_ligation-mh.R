@@ -113,7 +113,7 @@ get_igor_trimming_probs <- function(){
 
     if (!file.exists(vtrim_path)){
         print(paste0('need to produce trimming prob file'))
-        py_script = paste0(PROJECT_PATH, '/analysis_scripts/ligation-mh_signal_simulator/get_igor_params.py')
+        py_script = paste0(PROJECT_PATH, '/mh_simulation_scripts/ligation-mh_signal_simulator/get_igor_params.py')
         command = paste('python', py_script, MOD_OUTPUT_PATH)
         
         system(command)
