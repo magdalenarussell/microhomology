@@ -1,5 +1,0 @@
-VARIABLE_COLNAMES = ['ligation_mh']
-CHOICE1_VARIABLE_COLNAMES = []
-CHOICE2_VARIABLE_COLNAMES = []
-COUNT_COLNAME = 'weighted_observation'
-TWOSTEP=False
