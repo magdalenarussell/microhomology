@@ -54,7 +54,7 @@ get_all_possible_sites <- function(gene_type = GENE_NAME){
     genes = get_gene_order(gene_type)
 
     # Read frame data and filter for possible sites
-    frame_data = read_frames_data()
+    possible_sites = read_frames_data()
 
     possible_sites = possible_sites[v_trim <= UPPER_TRIM_BOUND & j_trim <= UPPER_TRIM_BOUND]
 
