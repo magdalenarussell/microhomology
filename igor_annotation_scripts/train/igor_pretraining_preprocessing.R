@@ -3,7 +3,7 @@ library(data.table)
 library(parallel)
 
 source('config/config.R')
-source('scripts/igor_scripts/igor_processing_functions.R')
+source('scripts/igor_processing_functions.R')
 
 args = commandArgs(trailingOnly=TRUE)
 

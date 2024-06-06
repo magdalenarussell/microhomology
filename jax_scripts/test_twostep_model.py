@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/mrussel2/microhomology/mechanistic-trimming/jax_scripts/')
+sys.path.append('/home/mrussel2/microhomology/jax_scripts/')
 import os
 import pandas as pd
 import numpy as np

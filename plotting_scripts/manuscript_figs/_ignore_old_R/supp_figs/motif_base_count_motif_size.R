@@ -1,4 +1,4 @@
-source('mechanistic-trimming/config/config.R')
+source('config/config.R')
 
 library(ggplot2)
 library(cowplot)

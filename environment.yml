@@ -1,4 +1,4 @@
-name: mechanistic-trimming_jax
+name: microhomology_jax
 channels:
   - conda-forge
   - defaults
@@ -454,4 +454,4 @@ dependencies:
     - pygor3==0.3.2
     - xarray==2023.12.0
     - yamlordereddictloader==0.4.2
-prefix: /home/mrussel2/miniconda3/envs/mechanistic-trimming_jax
+prefix: /home/mrussel2/miniconda3/envs/microhomology_jax

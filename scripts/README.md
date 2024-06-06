@@ -11,7 +11,7 @@ The main scripts are contained in the following files:
 * [Model validation script](validate_model.R) which is sourced by top level model validation script (e.g. ../validate_model.sh)
 
 Additional analysis scripts are contained in the [analysis scripts](analysis_scripts) directory. See [README](analysis_scripts/README.md) for more details.
-IGoR annotation specific scripts are contained within the [igor scripts](igor_scripts) directory. See [README](igor_scripts/README.md) for more details.
+IGoR annotation specific scripts are contained within the [igor scripts](igor_annotation_scripts) directory. See [README](igor_annotation_scripts/README.md) for more details.
 General [model evaluation](model_evaluation_functions.R) and [model training](model_fitting_functions.R) functions are also located here.
 
 Argument specific functions are located in the other directories housed here:

@@ -1,4 +1,4 @@
-source('mechanistic-trimming/config/config.R')
+source('config/config.R')
 
 library(cli)
 # library(devtools)
@@ -78,7 +78,7 @@ eval_results$loss_type = factor(eval_results$loss_type, levels = loss_order)
 # write plot data
 cols = c('model_type', 'loss_type', 'log_loss')
 loss_data = eval_results[, ..cols]
-fwrite(loss_data, paste0(PROJECT_PATH, '/mechanistic-trimming/plotting_scripts/manuscript_figs/training_loss/loss.tsv'), sep = '\t')
+fwrite(loss_data, paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/training_loss/loss.tsv'), sep = '\t')
 
 # create plot
 plot = plot_model_evaluation_loss_paracoord(eval_results, loss_bound = NULL, color_palette = colors, expand_var = 1.2)
@@ -86,6 +86,6 @@ plot = plot_model_evaluation_loss_paracoord(eval_results, loss_bound = NULL, col
 plot = plot + ylab('Expected per-sequence log loss\n')
 
 # save plot
-file_name = paste0(PROJECT_PATH, '/mechanistic-trimming/plotting_scripts/manuscript_figs/training_loss/loss_compare.pdf')
+file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/training_loss/loss_compare.pdf')
 
 ggsave(file_name, plot = plot, width = 32, height = 18, units = 'in', dpi = 750, device = cairo_pdf)

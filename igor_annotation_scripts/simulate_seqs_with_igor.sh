@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source $HOME/miniconda3/etc/profile.d/conda.sh
-conda activate mechanistic-trimming_py
+conda activate microhomology_jax
 
 set -eu
 
@@ -27,6 +27,6 @@ igor -threads $NCPU -set_wd $TEMP_DIR -batch bar -species human -chain $CHAIN -g
 # now annotate sequences 
 cd $HOME/microhomology
 
-COMMAND="python scripts/igor_scripts/simulate/convert_seqs_with_igor_${CHAIN}.py $OUTPUT_DIR $TEMP_DIR $ITER"
+COMMAND="python igor_annotation_scripts/simulate/convert_seqs_with_igor_${CHAIN}.py $OUTPUT_DIR $TEMP_DIR $ITER"
 
 $COMMAND

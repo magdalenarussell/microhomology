@@ -1,5 +1,5 @@
-source('mechanistic-trimming/config/config.R')
-source('mechanistic-trimming/config/file_paths.R')
+source('config/config.R')
+source('config/file_paths.R')
 
 library(foreach)
 library(doParallel)
