@@ -52,7 +52,7 @@ for (trim_model in TRIMMING_PROB_MODEL){
             }
             coefs = fread(coef_path)
 
-            fwrite(coefs, paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/mh_simulator_experiments/motif_base_count_mh-config-count_ligation-mh_trims_from_motif_base_count_experiment_EM_ligMH_trimMH_sims/', PARAM_GROUP, '/coefs_MHprob', param, '_', trim_model, '_trim-model.tsv'), sep = '\t')
+            fwrite(coefs, paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/mh_simulator_experiments/motif_base_count_mh-config-count_ligation-mh_trims_from_motif_base_count_experiment_EM_ligMH_trimMH_sims/', PARAM_GROUP, '/coefs_MHprob', param, '_', param2, '_', trim_model, '_trim-model.tsv'), sep = '\t')
 
             v_motif_heatmap = plot_motif_coefficient_heatmap_single_group(coefs[trim_type == 'v_trim'], with_values = FALSE, limits = c(-0.450, 0.450)) + ggtitle('   V-trimming coefficients')
             j_motif_heatmap = plot_motif_coefficient_heatmap_single_group(coefs[trim_type == 'j_trim'], with_values = FALSE, limits = c(-0.450, 0.450)) + ggtitle('   J-trimming coefficients')

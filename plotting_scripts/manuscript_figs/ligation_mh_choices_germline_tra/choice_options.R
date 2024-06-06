@@ -26,7 +26,7 @@ LEFT_NUC_MOTIF_COUNT <<- as.numeric(1)
 # 3' motif nucleotide count
 RIGHT_NUC_MOTIF_COUNT <<- as.numeric(2)
 
-MODEL_TYPE <<- 'motif_two-side-base-count-beyond_ligation-mh'
+MODEL_TYPE <<- 'motif_two-side-base-count-beyond_mh-config-count_ligation-mh'
 
 L2 <<- 'False'
 
