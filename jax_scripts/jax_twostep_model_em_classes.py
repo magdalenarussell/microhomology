@@ -50,10 +50,24 @@ class TwoStepDataTransformerEM(TwoStepDataTransformer):
         choice2s = pd.unique(df[self.choice2_colname])
         indices = pd.unique(df.seq_index)
 
-        choice1_final_shape = (len(groups), len(choices), len(self.choice1_variable_colnames))
-        choice1_int_shape = (len(groups), len(self.choice1_variable_colnames), len(choices))
-        choice2_final_shape = (len(groups), len(choices), len(choice2s), len(self.choice2_variable_colnames))
-        choice2_int_shape = (len(groups), len(self.choice2_variable_colnames), len(choices), len(choice2s))
+        if len(self.choice1_variable_colnames) > 0:
+            choice1_final_shape = (len(groups), len(choices), len(self.choice1_variable_colnames))
+            choice1_int_shape = (len(groups), len(self.choice1_variable_colnames), len(choices))
+            self.choice1_null = False
+        else:
+            choice1_final_shape = (len(groups), len(choices), 1)
+            choice1_int_shape = (len(groups), 1, len(choices))
+            self.choice1_null = True
+
+        if len(self.choice2_variable_colnames) > 0:
+            choice2_final_shape = (len(groups), len(choices), len(choice2s), len(self.choice2_variable_colnames))
+            choice2_int_shape = (len(groups), len(self.choice2_variable_colnames), len(choices), len(choice2s))
+            self.choice2_null = False
+        else:
+            choice2_final_shape = (len(groups), len(choices), len(choice2s), 1)
+            choice2_int_shape = (len(groups), 1, len(choices), len(choice2s))
+            self.choice2_null = True
+
         counts_shape = (len(groups), len(choices), len(choice2s), 1)
         indices_shape = (len(indices), len(groups), len(choices), len(choice2s), 1)
         prod_shape = (len(groups), len(choices), 1)
@@ -92,14 +106,22 @@ class TwoStepDataTransformerEM(TwoStepDataTransformer):
                                     fill_value=0)
         # reorder columns to reflect correct order
         choice2_pivot_vars = choice2_pivot_vars.reindex(choice2_var_mapping_df.VarName.tolist(), axis=1, level = 0)
-        assert len(self.choice2_variable_colnames) == 1, "need to verify correct choice2 matrix"
 
-        choice1_mat = jnp.array(choice1_pivot_vars).reshape(choice1_int_shape)
-        choice1_mat = choice1_mat.transpose((0, 2, 1))
+        if self.choice1_null:
+            choice1_mat = jnp.ones(choice1_final_shape)
+        else:
+            choice1_mat = jnp.array(choice1_pivot_vars).reshape(choice1_int_shape)
+            choice1_mat = choice1_mat.transpose((0, 2, 1))
+
         assert choice1_mat.shape == choice1_final_shape, "choice1 variable matrix is the incorrect dimension"
 
-        choice2_mat = jnp.array(choice2_pivot_vars).reshape(choice2_int_shape)
-        choice2_mat = choice2_mat.transpose((0, 2, 3, 1))
+        if self.choice2_null:
+            choice2_mat = jnp.ones(choice2_final_shape)
+        else:
+            assert len(self.choice2_variable_colnames) == 1, "need to verify correct choice2 matrix"
+            choice2_mat = jnp.array(choice2_pivot_vars).reshape(choice2_int_shape)
+            choice2_mat = choice2_mat.transpose((0, 2, 3, 1))
+
         assert choice2_mat.shape == choice2_final_shape, "choice2 variable matrix is the incorrect dimension"
 
         # Assuming groups is a list of unique group identifiers
