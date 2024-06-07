@@ -74,21 +74,21 @@ model = model.train_model(l2=L2, maxiter=250, tolerance=1e-8)
 print('trained model')
 
 # make predictions on full training dataset
-# predictor = TwoStepConditionalLogisticRegressionPredictor(model=model,
-#                                                       variable_colnames = model_params.variable_colnames,
-#                                                       choice1_variable_colnames = model_params.choice1_variable_colnames,
-#                                                       choice2_variable_colnames = model_params.choice2_variable_colnames,
-#                                                       count_colname = model_params.count_colname,
-#                                                       group_colname = model_params.group_colname,
-#                                                       repeat_obs_colname = model_params.repeat_obs_colname,
-#                                                       choice_colname = model_params.choice_colname,
-#                                                       choice2_colname = model_params.choice2_colname,
-#                                                       params = params)
+predictor = TwoStepConditionalLogisticRegressionPredictor(model=model,
+                                                      variable_colnames = model_params.variable_colnames,
+                                                      choice1_variable_colnames = model_params.choice1_variable_colnames,
+                                                      choice2_variable_colnames = model_params.choice2_variable_colnames,
+                                                      count_colname = model_params.count_colname,
+                                                      group_colname = model_params.group_colname,
+                                                      repeat_obs_colname = model_params.repeat_obs_colname,
+                                                      choice_colname = model_params.choice_colname,
+                                                      choice2_colname = model_params.choice2_colname,
+                                                      params = params)
 
-# write predictions and coefficients
-# training_pred = predictor.predict(new_df=processed_data)
-# predictions_filename = params.predictions_data_path(L2)
-# training_pred.to_csv(predictions_filename, sep='\t', index=False)
+write predictions and coefficients
+training_pred = predictor.predict(new_df=processed_data)
+predictions_filename = params.predictions_data_path(L2)
+training_pred.to_csv(predictions_filename, sep='\t', index=False)
 
 if MODEL_TYPE != 'null':
     coefs = model.get_coefficients_df()
