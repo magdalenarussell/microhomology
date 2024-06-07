@@ -1,4 +1,4 @@
-CHOICE1_VARIABLE_COLNAMES = ['motif', '5end_base_count', '3end_base_count', 'average_mh']
+CHOICE1_VARIABLE_COLNAMES = ['motif', '5end_base_count', '3end_base_count', 'expected_mh']
 CHOICE2_VARIABLE_COLNAMES = ['ligation_mh']
 VARIABLE_COLNAMES = CHOICE1_VARIABLE_COLNAMES + CHOICE2_VARIABLE_COLNAMES
 COUNT_COLNAME = 'weighted_observation'
