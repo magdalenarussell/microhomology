@@ -141,3 +141,9 @@ get_mh_config_count <- function(motif_data){
     motif_data[, mh_config_count := sum(nonzero_mh_indicator), by = .(v_gene, j_gene, v_trim, j_trim)]
     return(motif_data)
 }
+
+get_average_mh <- function(motif_data){
+    stopifnot('ligation_mh' %in% colnames(motif_data))
+    motif_data[, average_mh := mean(ligation_mh), by = .(v_gene, j_gene, v_trim, j_trim)]
+    return(motif_data)
+}
