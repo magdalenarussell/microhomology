@@ -65,7 +65,7 @@ model = TwoStepConditionalLogisticRegressorEM(training_df = processed_data,
 print('initialized model')
 
 # train model
-model = model.train_model(l2=L2, maxiter=100, tolerance=1e-8, maxiterEM=50, toleranceEM=1e-10)
+model = model.train_model(l2=L2, maxiter=100, tolerance=1e-8, maxiterEM=100, toleranceEM=1e-10)
 
 print('trained model')
 
@@ -89,6 +89,7 @@ print('trained model')
 if MODEL_TYPE != 'null':
     coefs = model.get_coefficients_df()
     coefs['training_error'] = float(model.training_info.state.error)
+    coefs['training_loss'] = float(model.training_info.state.value)
     coefs_filename = params.trained_coefs_path(L2)
     coefs.to_csv(coefs_filename, sep='\t', index=False)
 

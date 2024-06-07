@@ -81,6 +81,7 @@ training_pred.to_csv(predictions_filename, sep='\t', index=False)
 if MODEL_TYPE != 'null':
     coefs = model.get_coefficients_df()
     coefs['training_error'] = float(model.training_info.state.error)
+    coefs['training_loss'] = float(model.training_info.state.value)
     coefs_filename = params.trained_coefs_path(L2)
     coefs.to_csv(coefs_filename, sep='\t', index=False)
 
