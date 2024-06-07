@@ -2,18 +2,6 @@ calculate_subject_gene_weight <- function(compiled_data, gene_type = GENE_NAME, 
     genes = get_gene_order(gene_type)
     trims = get_trim_vars(trim_type)
 
-    if ('subject' %in% colnames(compiled_data)){
-        params = get_parameter_vector(trims, genes)
-        cols = unique(c(paste0(genes), trims, params))
-        if ('index' %in% colnames(compiled_data)){
-            cols = c(cols, 'index')
-        }
-        if ('frame_type' %in% colnames(compiled_data)){
-            cols = c(cols, 'frame_type', 'frame_stop')
-        }
-        compiled_data = compiled_data[, sum(count, na.rm = TRUE), by = cols]
-        setnames(compiled_data, 'V1', 'count')
-    }
     if (sample_annotation == FALSE){
         compiled_data[, sub_index := 1:.N, by = index]
         subset = compiled_data[sub_index == 1]

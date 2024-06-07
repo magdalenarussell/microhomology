@@ -455,6 +455,7 @@ class TwoStepConditionalLogisticRegressorEM(TwoStepDataTransformerEM, TwoStepCon
         self.all_site_mask_matrix = None
         self.index_matrix = None
         self.training_info_EM_log = None
+        self.prod_mask_matrix = None
         with open(file_path, 'wb') as file:
             # Serialize and save the object to the file
             dill.dump(self, file)
