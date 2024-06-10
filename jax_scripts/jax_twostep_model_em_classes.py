@@ -509,8 +509,6 @@ class TwoStepConditionalLogisticRegressionPredictorEM(TwoStepDataTransformerEM):
         original_new_df = new_df
         choice1_variable_matrix, choice2_variable_matrix, counts_matrix, nonrepeat_grp_matrix, all_site_mask_matrix, index_matrix, prod_mask_matrix, new_df = self.get_matrices(new_df, pretrain=False, return_df=True)
 
-        if not choice1_variable_matrix.shape[-1] + choice2_variable_matrix.shape[-1] == self.model.coefs.shape[0]:
-            raise ValueError("Input dataframe variable column count doesn't match the trained model coefficient count")
         # get predicted probabilities
         probs = self.model.get_joint_prob(choice1_variable_matrix, choice2_variable_matrix, all_site_mask_matrix, prod_mask_matrix, self.model.coefs)
         # transform probs to a dataframe
