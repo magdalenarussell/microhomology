@@ -166,14 +166,16 @@ adaptive_data_filtering <- function(data){
 }
 
 filter_by_productivity <- function(data){
+    # only filter when we are looking at all sequences, regardless of insertion status
+    # when we are looking at ligation MH (e.g. with zero insertion sequences), we will do productivity filtering later
     stopifnot(PRODUCTIVITY %in% c('productive', 'nonproductive', 'both'))
-    if (PRODUCTIVITY == 'productive'){
+    if (PRODUCTIVITY == 'productive' & !grepl('ligation-mh', PARAM_GROUP)){
         if (all(unique(data$productive) %in% c(TRUE, FALSE))){
             data = data[productive == TRUE]
         } else {
             data = data[productive == 'productive']
         }
-    } else if (PRODUCTIVITY == 'nonproductive'){
+    } else if (PRODUCTIVITY == 'nonproductive' & !grepl('ligation-mh', PARAM_GROUP)){
         if (all(unique(data$productive) %in% c(TRUE, FALSE))){
             data = data[productive == FALSE]
         } else {
@@ -366,6 +368,7 @@ compile_data_for_subject <- function(file_path=NULL, dataset=NULL, write = TRUE,
     }
 
     # Filter data by productivity and other adaptive data factors
+    # TODO remove filter
     temp_data = filter_by_productivity(temp_data)    
     temp_data = adaptive_data_filtering(temp_data)
 
