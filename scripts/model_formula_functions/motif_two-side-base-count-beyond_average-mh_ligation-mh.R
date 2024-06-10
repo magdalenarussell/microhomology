@@ -20,7 +20,7 @@ get_parameter_vector <- function(trims, genes){
         right_vars = c(right_vars, get_all_base_variables('3end', trims[i]))
     }
 
-    return(c(motif_positions, left_vars, right_vars, 'expected_mh', 'ligation_mh'))
+    return(c(motif_positions, left_vars, right_vars, 'average_mh', 'ligation_mh'))
 }
 
 process_single_data_for_model_fit <- function(group_motif_data, whole_nucseq = get_oriented_whole_nucseqs(), gene_type = GENE_NAME, trim_type = TRIM_TYPE){
