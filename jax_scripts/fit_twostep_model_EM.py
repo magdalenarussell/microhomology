@@ -25,7 +25,7 @@ L2 = sys.argv[6]
 L2 = (L2.lower() == 'true')
 NCPU = int(sys.argv[7])
 
-if len(sys.argv) > 7:
+if len(sys.argv) > 8:
     BOOTSTRAP = True
     BOOT_ITER = sys.argv[8]
 else:
