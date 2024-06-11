@@ -22,7 +22,7 @@ ANNOTATION_TYPE = 'igor_alpha'
 PARAM_GROUP = 'nonproductive_v-j_trim_ligation-mh'
 LEFT_NUC_MOTIF_COUNT = 1
 RIGHT_NUC_MOTIF_COUNT = 2
-MODEL_TYPE = 'motif_two-side-base-count-beyond_mh-config-count_ligation-mh'
+MODEL_TYPE = 'motif_two-side-base-count-beyond_average-mh_ligation-mh'
 L2 = True
 NCPU = 2
 
@@ -74,6 +74,6 @@ plt.legend(title='Dataset')
 # Add grid lines
 plt.grid(True)
 
-file_name = MOD_PROJECT_PATH + '/plotting_scripts/manuscript_figs/motif_base_count_mh-config-count_ligation-mh_model/' +  PARAM_GROUP + '/convergence.pdf'
+file_name = MOD_PROJECT_PATH + '/plotting_scripts/manuscript_figs/motif_base_count_average-mh_ligation-mh_model/' +  PARAM_GROUP + '/convergence.pdf'
 
 plt.savefig(file_name)
