@@ -166,14 +166,16 @@ adaptive_data_filtering <- function(data){
 }
 
 filter_by_productivity <- function(data){
+    # only filter when we are looking at all sequences, regardless of insertion status
+    # when we are looking at ligation MH (e.g. with zero insertion sequences), we will do productivity filtering later
     stopifnot(PRODUCTIVITY %in% c('productive', 'nonproductive', 'both'))
-    if (PRODUCTIVITY == 'productive'){
+    if (PRODUCTIVITY == 'productive' & !grepl('ligation-mh', PARAM_GROUP)){
         if (all(unique(data$productive) %in% c(TRUE, FALSE))){
             data = data[productive == TRUE]
         } else {
             data = data[productive == 'productive']
         }
-    } else if (PRODUCTIVITY == 'nonproductive'){
+    } else if (PRODUCTIVITY == 'nonproductive' & !grepl('ligation-mh', PARAM_GROUP)){
         if (all(unique(data$productive) %in% c(TRUE, FALSE))){
             data = data[productive == FALSE]
         } else {
@@ -366,6 +368,7 @@ compile_data_for_subject <- function(file_path=NULL, dataset=NULL, write = TRUE,
     }
 
     # Filter data by productivity and other adaptive data factors
+    # TODO remove filter
     temp_data = filter_by_productivity(temp_data)    
     temp_data = adaptive_data_filtering(temp_data)
 
@@ -528,6 +531,17 @@ processed_data_path <- function(sample_annotation=SAMPLE_ANNOT){
     filename = file.path(output_location, name)
     return(filename)
 }
+
+bootstrap_data_path <- function(iteration, sample_annotation=SAMPLE_ANNOT){
+    filename = processed_data_path(sample_annotation)
+    bn = basename(filename)
+    bn = str_replace(bn, '.tsv', paste0('_bootstrap_', iteration, '.tsv'))
+    path = file.path(dirname(filename), 'bootstraps')
+    dir.create(path, recursive = TRUE, showWarnings = FALSE)
+    boot_name = file.path(path, bn)
+    return(boot_name)
+}
+
 
 subsampling_processed_data_path <- function(prop, iter){
     output_location = file.path(MOD_OUTPUT_PATH, ANNOTATION_TYPE, PARAM_GROUP, paste0(MOTIF_TYPE, '_motif_trims_bounded_', LOWER_TRIM_BOUND, '_', UPPER_TRIM_BOUND), paste0(LEFT_NUC_MOTIF_COUNT, '_', RIGHT_NUC_MOTIF_COUNT, '_', MODEL_TYPE), 'temp_subsampling_exp', paste0('prop', prop))

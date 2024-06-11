@@ -19,6 +19,19 @@ get_model_coef_file_path <- function(L2, model_type=NULL, sample_annotation=SAMP
     return(file_name)
 }
 
+get_bootstrap_model_coef_file_path <- function(iteration, L2, model_type=NULL, sample_annotation=SAMPLE_ANNOT){
+    if (is.null(model_type)){
+        model_type = MODEL_TYPE
+    }
+    path = python_output_path(model_type)
+    if (sample_annotation==TRUE){
+        file_name = paste0(path, '/bootstraps/trained_coefs_L2', L2, '_bootstrap_', iteration, '.tsv')
+    } else {
+        file_name = paste0(path, '/bootstraps/trained_coefs_all_annotations_L2', L2, '_bootstrap_', iteration, '.tsv')
+    }
+    return(file_name)
+}
+
 get_model_predictions_file_path <- function(L2, model_type=NULL, sample_annotation=SAMPLE_ANNOT){
     if (is.null(model_type)){
         model_type = MODEL_TYPE
@@ -42,7 +55,7 @@ get_validation_predictions_file_path <- function(L2, validation_annotation, samp
     return(file_name)
 }
 
-get_model_eval_file_path <- function(L2, model_type=NULL, sample_annotations=SAMPLE_ANNOT){
+get_model_eval_file_path <- function(L2, model_type=NULL, sample_annotation=SAMPLE_ANNOT){
     if (is.null(model_type)){
         model_type = MODEL_TYPE
     }
@@ -55,7 +68,7 @@ get_model_eval_file_path <- function(L2, model_type=NULL, sample_annotations=SAM
     return(file_name)
 }
 
-get_LRT_file_path <- function(L2, sample_annotations=SAMPLE_ANNOT){
+get_LRT_file_path <- function(L2, sample_annotation=SAMPLE_ANNOT){
     path = file.path(MOD_OUTPUT_PATH, ANNOTATION_TYPE, PARAM_GROUP, paste0(MOTIF_TYPE, '_motif_trims_bounded_', LOWER_TRIM_BOUND, '_', UPPER_TRIM_BOUND))
 
     if (sample_annotation==TRUE){
@@ -65,6 +78,21 @@ get_LRT_file_path <- function(L2, sample_annotations=SAMPLE_ANNOT){
     }
     return(file_name)
 }
+
+get_bootstrap_pvalue_path <- function(L2, model_type = NULL, sample_annotation=SAMPLE_ANNOT){
+    if (is.null(model_type)){
+        model_type = MODEL_TYPE
+    }
+    path = python_output_path(model_type)
+
+    if (sample_annotation==TRUE){
+        file_name = paste0(path, '/bootstraps/bootstrap_coef_significance_results_L2', L2, '.tsv')
+    } else {
+        file_name = paste0(path, '/bootstraps/bootstrap_coef_significance_results_all_annotations_L2', L2, '.tsv')
+    }
+    return(file_name)
+}
+
 
 get_subsample_file_path <- function(L2, model_type=NULL){
     if (is.null(model_type)){

@@ -10,7 +10,7 @@ calculate_subject_gene_weight <- function(compiled_data, gene_type = GENE_NAME, 
         subset[, paste0(gene_type, '_count') := sum(count, na.rm = TRUE), by = col]
         cols = c(col, 'total_tcr', paste0(gene_type, '_count'))
         subset_subset = unique(subset[, ..cols])
-        compiled_data = merge(compiled_data, subset_subset)
+        compiled_data = merge(compiled_data, subset_subset, by = col)
     } else{
         compiled_data[, total_tcr := sum(count, na.rm = TRUE)]
         col = c(paste0(genes))
