@@ -25,6 +25,12 @@ L2 = sys.argv[6]
 L2 = (L2.lower() == 'true')
 NCPU = int(sys.argv[7])
 
+if len(sys.argv) > 7:
+    BOOTSTRAP = True
+    BOOT_ITER = sys.argv[8]
+else:
+    BOOTSTRAP = False
+
 # initialize parallelized pandas
 pandarallel.initialize(nb_workers=NCPU, progress_bar=True)
 
@@ -47,6 +53,9 @@ print('loaded parameters')
 
 # read in data
 processed_data_filename = params.R_processed_data_path()
+if BOOTSTRAP:
+    processed_data_filename = params.R_bootstrap_data_path(iteration = BOOT_ITER)
+
 processed_data = pd.read_csv(processed_data_filename, sep = '\t')
 print('read in data')
 
@@ -74,20 +83,24 @@ predictor = ConditionalLogisticRegressionPredictor(model=model,
                                                    params = params)
 
 # write predictions and coefficients
-training_pred = predictor.predict(new_df=processed_data)
-predictions_filename = params.predictions_data_path(L2)
-training_pred.to_csv(predictions_filename, sep='\t', index=False)
+if not BOOTSTRAP:
+    training_pred = predictor.predict(new_df=processed_data)
+    predictions_filename = params.predictions_data_path(L2)
+    training_pred.to_csv(predictions_filename, sep='\t', index=False)
 
 if MODEL_TYPE != 'null':
     coefs = model.get_coefficients_df()
     coefs['training_error'] = float(model.training_info.state.error)
     coefs['training_loss'] = float(model.training_info.state.value)
     coefs_filename = params.trained_coefs_path(L2)
+    if BOOTSTRAP:
+        coefs_filename = params.trained_bootstrap_coefs_path(iteration = BOOT_ITER, l2=L2)
     coefs.to_csv(coefs_filename, sep='\t', index=False)
 
 print('finished processing model predictions')
 
 # save trained model
-model_filename = params.model_output_path(L2)
-model.save_model(model_filename)
+if not BOOTSTRAP:
+    model_filename = params.model_output_path(L2)
+    model.save_model(model_filename)
 

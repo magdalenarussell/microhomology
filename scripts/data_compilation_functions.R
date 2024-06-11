@@ -532,6 +532,17 @@ processed_data_path <- function(sample_annotation=SAMPLE_ANNOT){
     return(filename)
 }
 
+bootstrap_data_path <- function(iteration, sample_annotation=SAMPLE_ANNOT){
+    filename = processed_data_path(sample_annotation)
+    bn = basename(filename)
+    bn = str_replace(bn, '.tsv', paste0('_bootstrap_', iteration, '.tsv'))
+    path = file.path(dirname(filename), 'bootstraps')
+    dir.create(path, recursive = TRUE, showWarnings = FALSE)
+    boot_name = file.path(path, bn)
+    return(boot_name)
+}
+
+
 subsampling_processed_data_path <- function(prop, iter){
     output_location = file.path(MOD_OUTPUT_PATH, ANNOTATION_TYPE, PARAM_GROUP, paste0(MOTIF_TYPE, '_motif_trims_bounded_', LOWER_TRIM_BOUND, '_', UPPER_TRIM_BOUND), paste0(LEFT_NUC_MOTIF_COUNT, '_', RIGHT_NUC_MOTIF_COUNT, '_', MODEL_TYPE), 'temp_subsampling_exp', paste0('prop', prop))
     dir.create(output_location, recursive = TRUE, showWarnings = FALSE)

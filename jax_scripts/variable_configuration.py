@@ -52,6 +52,20 @@ class global_paramaters():
             file_name = path + '/processed_data_all_annotations.tsv'
         return(file_name)
 
+    def R_bootstrap_data_path(self, iteration, sample_annotation = None, annotation = None):
+        if annotation == None:
+            annotation = self.annotation_type
+        if sample_annotation == None:
+            sample_annotation = self.sample_annotation
+
+        path = self.root_path + '/' + annotation + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type + '/bootstraps'
+        if sample_annotation:
+            file_name = path + '/processed_data_bootstrap_' + str(iteration) + '.tsv'
+        else:
+            file_name = path + '/processed_data_all_annotations_bootstrap_' + str(iteration) + '.tsv'
+        return(file_name)
+
+
     def R_input_domain_data_path(self):
         path = self.root_path + '/meta_data/' + self.chain_type
         file_name = path + '/frame_data.tsv'
@@ -93,6 +107,15 @@ class global_paramaters():
         else:
             file_name = path + '/trained_coefs_all_annotations_L2' + str(l2) + '.tsv'
         return(file_name)
+
+    def trained_bootstrap_coefs_path(self, iteration, l2):
+        path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type + '/bootstraps'
+        if self.sample_annotation:
+            file_name = path + '/trained_coefs_L2' + str(l2) + '_bootstrap_' + str(iteration) + '.tsv'
+        else:
+            file_name = path + '/trained_coefs_all_annotations_L2' + str(l2) + '_bootstrap_' + str(iteration) + '.tsv'
+        return(file_name)
+
 
     def subsampling_coefs_path(self, prop, l2):
         path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type + '/subsampling_experiment'
