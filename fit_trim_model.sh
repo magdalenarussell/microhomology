@@ -11,8 +11,5 @@ RIGHT_MOTIF_COUNT=$5
 MODEL_TYPE=$6
 L2=$7
 
-Rscript $PWD/scripts/process_data_for_model_fitting.R $ANNOTATION_TYPE $PARAM_GROUP $NCPU $LEFT_MOTIF_COUNT $RIGHT_MOTIF_COUNT $MODEL_TYPE
-echo "finished processing data for model fitting"
-
 python -i $PWD/jax_scripts/fit_model.py $ANNOTATION_TYPE $PARAM_GROUP $LEFT_MOTIF_COUNT $RIGHT_MOTIF_COUNT $MODEL_TYPE $L2 $NCPU
 echo "finished training model and making predictions"
