@@ -15,18 +15,18 @@ blas_set_num_threads(1)
 
 args = commandArgs(trailingOnly=TRUE)
 
-PARAM_GROUP <<- 'nonproductive_v-j_trim_ligation-mh'
+PARAM_GROUP <<- args[1]
 source(paste0(MOD_PROJECT_PATH, '/scripts/param_groups/', PARAM_GROUP, '.R'))
-NCPU <<- as.numeric(args[1])
+NCPU <<- as.numeric(args[2])
 # 5' motif nucleotide count
-LEFT_NUC_MOTIF_COUNT <<- 1
+LEFT_NUC_MOTIF_COUNT <<- as.numeric(args[3])
 # 3' motif nucleotide count
-RIGHT_NUC_MOTIF_COUNT <<- 2
-MODEL_TYPE <<- args[2]
-MODEL_TYPE2 <<- args[3]
-L2 <<- args[4]
-ANNOTATION_TYPE <<- args[5]
-DF <<- as.numeric(args[6])
+RIGHT_NUC_MOTIF_COUNT <<- as.numeric(args[4])
+MODEL_TYPE <<- args[5]
+MODEL_TYPE2 <<- args[6]
+L2 <<- args[7]
+ANNOTATION_TYPE <<- args[8]
+DF <<- as.numeric(args[9])
 
 source(paste0(MOD_PROJECT_PATH,'/scripts/data_compilation_functions.R'))
 
