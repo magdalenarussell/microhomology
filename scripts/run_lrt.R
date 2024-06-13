@@ -35,10 +35,17 @@ filename = processed_data_path(sample_annotation = SAMPLE_ANNOT)
 full_data = fread(filename)
 
 full_pred_path = get_model_predictions_file_path(L2)
-full_pred = fread(full_pred_path)[new_type != '0']
+
+full_pred = fread(full_pred_path)
+if ('new_type' %in% colnames(full_pred)){
+    full_pred = full_pred[new_type != '0']
+}
 
 sub_pred_path = get_model_predictions_file_path(L2, model_type=MODEL_TYPE2)
-sub_pred = fread(sub_pred_path)[new_type != '0']
+sub_pred = fread(sub_pred_path)
+if ('new_type' %in% colnames(sub_pred)){
+    sub_pred = sub_pred[new_type != '0']
+}
 
 if (SAMPLE_ANNOT == FALSE){
     full_pred[, index_prob_sum := sum(predicted_prob, na.rm = TRUE), by = index]
