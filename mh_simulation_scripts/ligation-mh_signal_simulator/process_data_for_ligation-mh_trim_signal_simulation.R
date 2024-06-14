@@ -44,6 +44,8 @@ if (PARAM_GROUP %like% 'both'){
 source(paste0(MOD_PROJECT_PATH,'/mh_simulation_scripts/ligation-mh_signal_simulator/ligation-mh_simulator_functions.R'))
 source(paste0(MOD_PROJECT_PATH,'/scripts/data_compilation_functions.R'))
 
+stopifnot(LOCUS == 'alpha')
+
 # total number of sequences
 total = 2500000
 

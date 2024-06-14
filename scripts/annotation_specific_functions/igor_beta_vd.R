@@ -1,4 +1,4 @@
-LOCUS <<- 'beta'
+LOCUS <<- 'beta_vd'
 DATA_TYPE <<- 'igor'
 source(paste0(MOD_PROJECT_PATH, '/scripts/locus_specific_functions/', LOCUS, '.R'))
 source(paste0(MOD_PROJECT_PATH, '/scripts/data_type_functions/', DATA_TYPE, '.R'))

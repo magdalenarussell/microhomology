@@ -1,4 +1,4 @@
-LOCUS <<- 'beta'
+LOCUS <<- 'beta_dj'
 DATA_TYPE <<- 'adaptive'
 source(paste0(MOD_PROJECT_PATH, '/scripts/locus_specific_functions/', LOCUS, '.R'))
 source(paste0(MOD_PROJECT_PATH, '/scripts/data_type_functions/', DATA_TYPE, '.R'))

@@ -11,3 +11,18 @@ JOINING_GENE <<- pairs$gene_pairs[GENE_NAME]
 JOINING_TRIM <<- pairs$trim_pairs[TRIM_TYPE]
 JOINING_INSERT <<- pairs$insert_pairs[GENE_NAME]
 CHAIN_TYPE <<- 'TRA'
+JUNCTION_TYPE <<- 'VJ'
+
+get_gene_order <- function(gene_type){
+    return(c('v_gene', 'j_gene'))
+}
+
+get_trim_order <- function(trim_type){
+    final = c('v_trim', 'j_trim')
+    if (trim_type %like% 'adjusted_mh'){
+        final = paste0(final, '_adjusted_mh')
+    }
+    return(final)
+}
+
+

@@ -1,6 +1,6 @@
-stopifnot(LOCUS == 'alpha')
+stopifnot(LOCUS %like% 'beta')
 
-source(paste0(MOD_PROJECT_PATH, '/scripts/gene_specific_functions/junction_specific_functions/vj.R'))
+source(paste0(MOD_PROJECT_PATH, '/scripts/gene_specific_functions/junction_specific_functions/vd.R'))
 
 filter_motif_data_for_possible_sites <- function(motif_data, whole_nucseq = get_oriented_whole_nucseqs(), gene_type = GENE_NAME, trim_type = TRIM_TYPE, only_nonprod_sites = ONLY_NONPROD_SITES){
     return(motif_data)
