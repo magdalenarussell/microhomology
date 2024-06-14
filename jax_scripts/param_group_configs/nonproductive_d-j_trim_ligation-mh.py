@@ -1,5 +1,5 @@
-TRIM_TYPE = 'v-j_trim_ligation-mh'
-PRODUCTIVITY = 'both'
+TRIM_TYPE = 'd3-j_trim_ligation-mh'
+PRODUCTIVITY = 'nonproductive'
 MOTIF_TYPE = 'unbounded'
 GENE_NAME = TRIM_TYPE[0:3] + '_gene'
 UPPER_TRIM_BOUND = 14
@@ -9,4 +9,4 @@ MODEL_GROUP = 'all_subjects'
 GENE_WEIGHT_TYPE = 'p_gene_pooled'
 REPEAT_OBS_COLNAME = None
 SAMPLE_ANNOT = False
-ONLY_NONPROD_SITES = False
+ONLY_NONPROD_SITES = True
