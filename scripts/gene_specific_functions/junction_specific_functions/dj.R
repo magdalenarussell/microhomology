@@ -41,8 +41,8 @@ get_processed_sequences <- function(adjusted_df, frame_data, pnucs = 2){
     # check MH
     tog[ligation_mh > 0, d_gene_mh := substring(trimmed_d_gene_sequence, nchar(trimmed_d_gene_sequence) - ligation_mh + 1)]
     tog[ligation_mh > 0, j_gene_mh := substring(trimmed_j_gene_sequence, 1, ligation_mh)]
-    stopifnot(all(tog[ligation_mh > 0]$d_mid == tog[ligation_mh > 0]$d_gene_mh))
-    stopifnot(all(tog[ligation_mh > 0]$d_mid == tog[ligation_mh > 0]$j_gene_mh))
+    stopifnot(all(tog[ligation_mh > 0]$top_mid == tog[ligation_mh > 0]$d_gene_mh))
+    stopifnot(all(tog[ligation_mh > 0]$top_mid == tog[ligation_mh > 0]$j_gene_mh))
 
     # get sequences corrected for MH
     tog[, trimmed_j_gene_sequence_wo_mh := substring(trimmed_j_gene_sequence, ligation_mh + 1)]

@@ -137,8 +137,8 @@ get_all_possible_sites <- function(gene_type = GENE_NAME, trim_type = TRIM_TYPE)
     # Read frame data and filter for possible sites
     possible_sites = read_frames_data()
 
-    possible_sites = possible_sites[get(genes[1]) <= UPPER_TRIM_BOUND]
-    possible_sites = possible_sites[get(genes[2]) <= UPPER_TRIM_BOUND]
+    possible_sites = possible_sites[get(trims[1]) <= UPPER_TRIM_BOUND]
+    possible_sites = possible_sites[get(trims[2]) <= UPPER_TRIM_BOUND]
 
     # Define columns for filtering possible sites
     cols = c(paste0(genes), 'frame_type', 'frame_stop', trims, 'processed_sequence', 'processed_nt_change')

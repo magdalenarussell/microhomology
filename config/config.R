@@ -11,8 +11,8 @@ TCR_REPERTOIRE_DATA_igor_alpha = paste0(MOD_PROJECT_PATH, '/_ignore/heikkila_alp
 
 # (optional) Testing/Validation data sets; change the path to these data after IGoR processing
 TCR_REPERTOIRE_DATA_igor_sim_alpha = paste0(MOD_PROJECT_PATH, '/_ignore/igor_sim_alpha/')
-TCR_REPERTOIRE_DATA_validation_igor_alpha = paste0(MOD_PROJECT_PATH, '/_ignore/validation_data_alpha/')
-TCR_REPERTOIRE_DATA_validation_igor_gamma = paste0(MOD_PROJECT_PATH, '/_ignore/validation_data_gamma/')
+TCR_REPERTOIRE_DATA_validation_parsimony_alpha = paste0(MOD_PROJECT_PATH, '/_ignore/validation_data_alpha/')
+TCR_REPERTOIRE_DATA_validation_adaptive_gamma = paste0(MOD_PROJECT_PATH, '/_ignore/validation_data_gamma/')
 
 # (required) TRB gene names and germline sequences from IMGT
 WHOLE_NUCSEQS_alpha = paste0(MOD_PROJECT_PATH,'/_ignore/imgt_tcrad_sequences.tsv')

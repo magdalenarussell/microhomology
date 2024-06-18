@@ -15,7 +15,7 @@ get_processed_sequences <- function(adjusted_df, frame_data, pnucs = 2){
     # j_gene_sequence should be the bottom strand oriented 5>3
     cols = colnames(adjusted_df)
     # get overlapping sequences
-    overlaps = adjusted_df[, get_overlapping_regions(v_gene_sequence, j_gene_sequence, v_trim, j_trim, ligation_mh, positions = c('up', 'mid', 'down'), rename_cols = FALSE)]
+    overlaps = adjusted_df[, get_overlapping_regions('v_gene', 'j_gene', v_gene_sequence, j_gene_sequence, v_trim, j_trim, ligation_mh, positions = c('up', 'mid', 'down'), rename_cols = FALSE)]
     tog = cbind(adjusted_df, overlaps) 
 
     # get bottom gene sequence 
@@ -41,8 +41,8 @@ get_processed_sequences <- function(adjusted_df, frame_data, pnucs = 2){
     # check MH
     tog[ligation_mh > 0, v_gene_mh := substring(trimmed_v_gene_sequence, nchar(trimmed_v_gene_sequence) - ligation_mh + 1)]
     tog[ligation_mh > 0, j_gene_mh := substring(trimmed_j_gene_sequence, 1, ligation_mh)]
-    stopifnot(all(tog[ligation_mh > 0]$v_mid == tog[ligation_mh > 0]$v_gene_mh))
-    stopifnot(all(tog[ligation_mh > 0]$v_mid == tog[ligation_mh > 0]$j_gene_mh))
+    stopifnot(all(tog[ligation_mh > 0]$top_mid == tog[ligation_mh > 0]$v_gene_mh))
+    stopifnot(all(tog[ligation_mh > 0]$top_mid == tog[ligation_mh > 0]$j_gene_mh))
 
     # get sequences corrected for MH
     tog[, trimmed_j_gene_sequence_wo_mh := substring(trimmed_j_gene_sequence, ligation_mh + 1)]
@@ -60,7 +60,7 @@ get_processed_sequences <- function(adjusted_df, frame_data, pnucs = 2){
 
     tog[, processed_cdr3 := substring(processed_protein, cys_index, nchar(processed_protein) - phe_from_end_index)]
 
-    setnames(tog, 'v_mid', 'ligation_mh_nt')
+    setnames(tog, 'top_mid', 'ligation_mh_nt')
     cols = c(cols, 'processed_sequence', 'processed_nt_change', 'ligation_mh_nt', 'processed_cdr3', 'cys_character', 'phe_character')
     return(tog[, ..cols])
 }
@@ -68,7 +68,7 @@ get_processed_sequences <- function(adjusted_df, frame_data, pnucs = 2){
 get_frames_data <- function(){
     # This function will only return frame data for annotations that are observable, after re-annotation to accommodate cases of maximal ligation-mh
     # Read only necessary columns and apply filter
-    frames = fread('https://raw.githubusercontent.com/phbradley/conga/master/conga/tcrdist/db/combo_xcr.tsv')[organism == 'human' & chain == substring(CHAIN_TYPE, 3, 3)]
+    frames = fread('https://raw.githubusercontent.com/phbradley/conga/master/conga/tcrdist/db/combo_xcr.tsv')[organism %like% 'human' & chain == CHAIN_SUBTYPE][substring(id, 3, 3) == substring(CHAIN_TYPE, 3, 3)]
 
     # Combine operations to reduce redundancy
     v = frames[region == 'V', .(v_gene = id, v_frame = frame, v_seq = nucseq)]
@@ -97,7 +97,7 @@ get_frames_data <- function(){
     lig_mat = matrix(0, nrow = nrow(all), ncol = length(seq(1, 15)))
 
     for (overlap in seq(ncol(lig_mat))){
-        lig = get_possible_ligation_mh_fixed_trim(all, overlap_count = overlap)
+        lig = get_possible_ligation_mh_fixed_trim(all, overlap_count = overlap, 'v_gene_sequence', 'j_gene_sequence', 'v_trim', 'j_trim')
         lig_mat[, overlap] = lig
         print(paste0('finished getting ligation configurations for ', overlap, ' MH overlap'))
     }

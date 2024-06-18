@@ -12,5 +12,6 @@ JOINING_GENE <<- pairs$gene_pairs[GENE_NAME]
 JOINING_TRIM <<- pairs$trim_pairs[TRIM_TYPE]
 JOINING_INSERT <<- pairs$insert_pairs[GENE_NAME]
 CHAIN_TYPE <<- 'IGH'
+CHAIN_SUBTYPE <<- 'B'
 JUNCTION_TYPE <<- 'VDJ'
 SUB_JUNCTION_TYPE <<- 'DJ'
