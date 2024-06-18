@@ -1,4 +1,4 @@
-TRIM_TYPE <<- 'd-j_trim_ligation-mh'
+TRIM_TYPE <<- 'd3-j_trim_ligation-mh'
 PRODUCTIVITY <<- 'nonproductive'
 MOTIF_TYPE <<- 'unbounded'
 GENE_NAME <<- paste0(substring(TRIM_TYPE, 1, 3), '_gene')

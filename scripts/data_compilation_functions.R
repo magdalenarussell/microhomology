@@ -7,6 +7,27 @@ source(paste0(MOD_PROJECT_PATH, '/scripts/mh_functions.R'))
 
 REQUIRED_COMMON_NUCS_5 <<- UPPER_TRIM_BOUND + 10 
 
+get_gene_order <- function(gene_type){
+    type = strsplit(gene_type, '_')[[1]][1]
+    if (type %like% '-'){
+        type = strsplit(type, '-')[[1]]
+    }
+    final = paste0(type, '_gene')
+    return(final)
+}
+
+get_trim_order <- function(trim_type){
+    type = strsplit(trim_type, '_')[[1]][1]
+    if (type %like% '-'){
+        type = strsplit(type, '-')[[1]]
+    }
+    final = paste0(type, '_trim')
+    if (trim_type %like% 'adjusted_mh'){
+        final = paste0(final, '_adjusted_mh')
+    }
+    return(final)
+}
+
 get_trim_vars <- function(trim_type){
     trim_sites = get_trim_order(trim_type)
     if (trim_type %like% 'ligation-mh'){
@@ -402,7 +423,7 @@ compile_all_data <- function(directory, gene_type = GENE_NAME, trim_type = TRIM_
 }
 
 frame_data_path <- function(){
-    output_location = file.path(MOD_OUTPUT_PATH, 'meta_data', CHAIN_TYPE)
+    output_location = file.path(MOD_OUTPUT_PATH, 'meta_data', CHAIN_TYPE, SUB_JUNCTION_TYPE)
     dir.create(output_location, recursive = TRUE, showWarnings = FALSE)
     filename = file.path(output_location, 'frame_data.tsv')
     return(filename)

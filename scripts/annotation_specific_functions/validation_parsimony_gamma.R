@@ -1,5 +1,5 @@
-LOCUS <<- 'alpha'
-DATA_TYPE <<- 'igor'
+LOCUS <<- 'gamma'
+DATA_TYPE <<- 'parsimony'
 source(paste0(MOD_PROJECT_PATH, '/scripts/locus_specific_functions/', LOCUS, '.R'))
 source(paste0(MOD_PROJECT_PATH, '/scripts/data_type_functions/', DATA_TYPE, '.R'))
 
