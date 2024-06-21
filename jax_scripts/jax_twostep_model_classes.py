@@ -309,7 +309,7 @@ class TwoStepConditionalLogisticRegressor(TwoStepDataTransformer):
         self.l2reg_grid = None
 
     # Get probability for input parameters given coefficients
-    def get_indiv_prob(self, choice1_variables, choice2_variables, all_site_mask, prod_mask, coefs=None):
+    def get_indiv_prob(self, choice1_variables, choice2_variables, all_site_mask, prod_mask, coefs=None, training_mode=True):
         """
         Computes individual probabilities for the first and second choices given the input variables and coefficients.
 
@@ -349,6 +349,11 @@ class TwoStepConditionalLogisticRegressor(TwoStepDataTransformer):
         choice1_prod_mask = reshaped_prod_mask.sum(axis = 2)
         choice1_prod_mask = jnp.where(choice1_prod_mask != 0, 1, choice1_prod_mask)
 
+        if not training_mode:
+            reshaped_prod_mask = reshaped_all_mask
+            choice1_prod_mask = reshaped_all_mask.sum(axis = 2)
+            choice1_prod_mask = jnp.where(choice1_prod_mask != 0, 1, choice1_prod_mask)
+
         # Calculate the productivity probability
         # replace missing choices with -INF so that they will not count towards probability
         # start by getting sum of choice2 probs for sites with desired productivity, then all sites
@@ -372,7 +377,7 @@ class TwoStepConditionalLogisticRegressor(TwoStepDataTransformer):
 
         return choice1_probs, choice2_probs
 
-    def get_joint_prob(self, choice1_variables, choice2_variables, all_site_mask, prod_mask, coefs=None):
+    def get_joint_prob(self, choice1_variables, choice2_variables, all_site_mask, prod_mask, coefs=None, training_mode=True):
         """
         Computes the joint probabilities for the two-step choices using the individual choice probabilities.
 
@@ -385,7 +390,7 @@ class TwoStepConditionalLogisticRegressor(TwoStepDataTransformer):
         Returns:
             ndarray: An array of joint probabilities for the two-step choices.
         """
-        choice1_probs, choice2_probs = self.get_indiv_prob(choice1_variables, choice2_variables, all_site_mask, prod_mask, coefs)
+        choice1_probs, choice2_probs = self.get_indiv_prob(choice1_variables, choice2_variables, all_site_mask, prod_mask, coefs, training_mode=training_mode)
         choice1_probs_reshape = choice1_probs.reshape(choice1_probs.shape[0], choice1_probs.shape[1], 1)
         prob = choice1_probs_reshape * choice2_probs
         return prob
@@ -773,7 +778,7 @@ class TwoStepConditionalLogisticRegressionPredictor(TwoStepDataTransformer):
         if not choice1_variable_matrix.shape[-1] + choice2_variable_matrix.shape[-1] == self.model.coefs.shape[0]:
             raise ValueError("Input dataframe variable column count doesn't match the trained model coefficient count")
         # get predicted probabilities
-        probs = self.model.get_joint_prob(choice1_variable_matrix, choice2_variable_matrix, all_site_mask_matrix, prod_mask_matrix, self.model.coefs)
+        probs = self.model.get_joint_prob(choice1_variable_matrix, choice2_variable_matrix, all_site_mask_matrix, prod_mask_matrix, self.model.coefs, training_mode=False)
         # transform probs to a dataframe
         choice1_cols = self.get_mapping_dict(new_df, self.choice_colname)
         choice2_cols = self.get_mapping_dict(new_df, self.choice2_colname)

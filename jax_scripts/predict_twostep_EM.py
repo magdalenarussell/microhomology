@@ -12,7 +12,7 @@ import pickle
 from pandarallel import pandarallel
 from patsy.contrasts import Sum
 from sklearn.model_selection import GroupKFold
-from jax_twostep_model_em_classes import TwoStepDataTransformerEM, TwoStepConditionalLogisticRegressorEM, TwoStepConditionalLogisticRegressionPredictorEM
+from jax_twostep_model_em_classes import TwoStepDataTransformerEM, TwoStepConditionalLogisticRegressorEM, TwoStepConditionalLogisticRegressionEvaluatorEM, TwoStepConditionalLogisticRegressionPredictorEM
 from config import MOD_OUTPUT_PATH, MOD_PROJECT_PATH
 import variable_configuration
 
