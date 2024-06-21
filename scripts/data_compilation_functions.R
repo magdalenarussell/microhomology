@@ -8,16 +8,20 @@ source(paste0(MOD_PROJECT_PATH, '/scripts/mh_functions.R'))
 REQUIRED_COMMON_NUCS_5 <<- UPPER_TRIM_BOUND + 10 
 
 get_gene_order <- function(gene_type){
-    genes = strsplit(gene_type, '_')[[1]][1]
-    genes = strsplit(genes, '-')[[1]]
-    return(c(paste0(genes, '_gene')))
+    type = strsplit(gene_type, '_')[[1]][1]
+    if (type %like% '-'){
+        type = strsplit(type, '-')[[1]]
+    }
+    final = paste0(type, '_gene')
+    return(final)
 }
 
 get_trim_order <- function(trim_type){
-    trim_type_subset = str_remove(trim_type, '_ligation-mh')
-    trims = strsplit(trim_type_subset, '_')[[1]][1]
-    trims = strsplit(trims, '-')[[1]]
-    final = c(paste0(trims, '_trim')) 
+    type = strsplit(trim_type, '_')[[1]][1]
+    if (type %like% '-'){
+        type = strsplit(type, '-')[[1]]
+    }
+    final = paste0(type, '_trim')
     if (trim_type %like% 'adjusted_mh'){
         final = paste0(final, '_adjusted_mh')
     }
@@ -159,7 +163,7 @@ adaptive_data_filtering <- function(data){
     if ('adaptive_v_gene_call' %in% colnames(data)){
         data = data[v_gene == adaptive_v_gene_call]
         if (LOCUS == 'alpha'){
-            data = data[vj_insert <= 15]
+            data = data[get(JOINING_INSERT) <= 15]
         }
     }
     return(data)
@@ -167,15 +171,16 @@ adaptive_data_filtering <- function(data){
 
 filter_by_productivity <- function(data){
     # only filter when we are looking at all sequences, regardless of insertion status
-    # when we are looking at ligation MH (e.g. with zero insertion sequences), we will do productivity filtering later
+    # when we are looking at ligation MH (e.g. with zero insertion sequences)
+    # within VJ junctions, we will do productivity filtering later
     stopifnot(PRODUCTIVITY %in% c('productive', 'nonproductive', 'both'))
-    if (PRODUCTIVITY == 'productive' & !grepl('ligation-mh', PARAM_GROUP)){
+    if (PRODUCTIVITY == 'productive' & JUNCTION_TYPE == 'VDJ'){
         if (all(unique(data$productive) %in% c(TRUE, FALSE))){
             data = data[productive == TRUE]
         } else {
             data = data[productive == 'productive']
         }
-    } else if (PRODUCTIVITY == 'nonproductive' & !grepl('ligation-mh', PARAM_GROUP)){
+    } else if (PRODUCTIVITY == 'nonproductive' & JUNCTION_TYPE == 'VDJ'){
         if (all(unique(data$productive) %in% c(TRUE, FALSE))){
             data = data[productive == FALSE]
         } else {
@@ -368,7 +373,6 @@ compile_data_for_subject <- function(file_path=NULL, dataset=NULL, write = TRUE,
     }
 
     # Filter data by productivity and other adaptive data factors
-    # TODO remove filter
     temp_data = filter_by_productivity(temp_data)    
     temp_data = adaptive_data_filtering(temp_data)
 
@@ -381,7 +385,7 @@ compile_data_for_subject <- function(file_path=NULL, dataset=NULL, write = TRUE,
 
     # Adjust trimming sites if necessary based on MH ligation
     TRIMMING_LIGATION_REANNOTATED <<- FALSE
-    temp_data = adjust_trimming_sites_for_ligation_mh(temp_data, sample_annotation)
+    temp_data = adjust_trimming_sites_for_ligation_mh(temp_data, sample_annotation, trim_type, gene_type)
 
     # Get oriented full sequences and group genes by common features
     together = get_oriented_full_sequences(temp_data, gene_type = gene_type)
@@ -418,92 +422,8 @@ compile_all_data <- function(directory, gene_type = GENE_NAME, trim_type = TRIM_
     stopImplicitCluster()
 }
 
-get_stop_codons <- function(adjusted_data, trim_type = TRIM_TYPE, gene_type = GENE_NAME, keep_extra_cols = c()){
-    require(Biostrings)
-    
-    stops = grepl("\\*", adjusted_data$processed_cdr3)
-    adjusted_data[, frame_stop := stops]
-
-    # Select relevant columns for output
-    cols2 = c('v_gene', 'j_gene', 'v_frame', 'j_frame', 'v_seq_len', 'j_seq_len', 'v_trim', 'j_trim', 'ligation_mh', 'frame_stop', keep_extra_cols)
-    adjusted_data = unique(adjusted_data[, ..cols2])
-    return(adjusted_data)
-}
-
-get_cdr3_frame <- function(adjusted_data){
-    # check for matching cysteine and phenylalanine/tryptophan
-    adjusted_data[(substring(processed_cdr3, nchar(processed_cdr3)) == phe_character), frame_type := 'In']
-    adjusted_data[!(substring(processed_cdr3, nchar(processed_cdr3)) == phe_character), frame_type := 'Out']
-    return(adjusted_data)
-}
-
-get_frames_data <- function(){
-    # This function will only return frame data for annotations that are observable, after re-annotation to accommodate cases of maximal ligation-mh
-    # Read only necessary columns and apply filter
-    frames = fread('https://raw.githubusercontent.com/phbradley/conga/master/conga/tcrdist/db/combo_xcr.tsv')[organism == 'human' & chain == substring(CHAIN_TYPE, 3, 3)]
-
-    # Combine operations to reduce redundancy
-    v = frames[region == 'V', .(v_gene = id, v_frame = frame, v_seq = nucseq)]
-    j = frames[region == 'J', .(j_gene = id, j_frame = frame, j_seq = nucseq)]
-
-    # Merge operations
-    v$dummy = 1
-    j$dummy = 1
-    gene_pairs = merge(v, j, by = 'dummy', allow.cartesian = TRUE)
-
-    # Get all trimming sites
-    trims = data.table(expand.grid(v_trim = seq(LOWER_TRIM_BOUND, 16), 
-                                   j_trim = seq(LOWER_TRIM_BOUND, 18)))
-    trims$dummy = 1
-
-    # Merge genes and trims
-    all = merge(gene_pairs, trims, by = 'dummy', allow.cartesian = TRUE)[, -c('dummy')]
-    # Get sequence lengths and subset data to necessary columns
-    all[, c('v_seq_len', 'j_seq_len') := .(nchar(v_seq), nchar(j_seq))]
-
-    cols = c('v_gene', 'j_gene', 'v_frame', 'j_frame', 'v_seq_len', 'j_seq_len', 'v_trim', 'j_trim', 'v_gene_sequence', 'j_gene_sequence')
-    all = get_oriented_full_sequences(all)
-    all = unique(all[, ..cols])
-
-    # get possible ligation mh
-    lig_mat = matrix(0, nrow = nrow(all), ncol = length(seq(1, 15)))
-
-    for (overlap in seq(ncol(lig_mat))){
-        lig = get_possible_ligation_mh_fixed_trim(all, overlap_count = overlap)
-        lig_mat[, overlap] = lig
-        print(paste0('finished getting ligation configurations for ', overlap, ' MH overlap'))
-    }
-
-    # get unique vals 
-    unique_mh_list = apply(lig_mat, 1, unique)
-
-    # combine
-    adjusted_all = data.table(all, ligation_mh = unique_mh_list)
-
-    # Expand the rows
-    adjusted_grouped = as.data.table(adjusted_all[, unnest(.SD, cols = c("ligation_mh"))])
-
-    # Get oriented full sequences and group genes by common features, also subset columns again
-    cols2 = c(cols, 'ligation_mh')
-    adjusted_grouped = unique(adjusted_grouped[, ..cols2])
-    
-    # get processed sequences
-    adjusted_grouped = get_processed_sequences(adjusted_grouped, frames)
-
-    # Get stop positions and frames
-    adjusted_grouped = get_stop_codons(adjusted_grouped, keep_extra_cols = c('processed_sequence', 'processed_nt_change', 'ligation_mh_nt', 'processed_cdr3', 'cys_character', 'phe_character'))
-
-    # Frame calculations
-    adjusted_grouped = get_cdr3_frame(adjusted_grouped)
-
-    # Subset data by columns
-    cols3 = c('v_gene', 'j_gene', 'v_frame', 'j_frame', 'v_seq_len', 'j_seq_len', 'v_trim', 'j_trim', 'ligation_mh', 'frame_type', 'frame_stop', 'processed_sequence', 'processed_cdr3', 'processed_nt_change', 'ligation_mh_nt')
-    final = adjusted_grouped[, ..cols3]
-    return(final)
-}
-
 frame_data_path <- function(){
-    output_location = file.path(MOD_OUTPUT_PATH, 'meta_data', CHAIN_TYPE)
+    output_location = file.path(MOD_OUTPUT_PATH, 'meta_data', CHAIN_TYPE, SUB_JUNCTION_TYPE)
     dir.create(output_location, recursive = TRUE, showWarnings = FALSE)
     filename = file.path(output_location, 'frame_data.tsv')
     return(filename)
@@ -518,6 +438,56 @@ read_frames_data <- function(){
         frame_data = fread(file_name)
     }
     return(frame_data)
+}
+
+get_cdr3_indices <- function(frame_data){
+    v_type = paste0(CHAIN_TYPE, 'V')
+    j_type = paste0(CHAIN_TYPE, 'J')
+
+    vframe = frame_data[id %like% v_type]
+    vframe[, c("extra", "cdr1", "cdr2", 'cdr3') := tstrsplit(cdr_columns, ";", fixed = TRUE)]
+    vframe[, c("cdr3_start", "CDR3_end") := tstrsplit(cdr3, "-", fixed = TRUE)]
+    vframe[, seq_start := substring(aligned_protseq, 1, cdr3_start)]
+    vframe[, dot_count := stringr::str_count(seq_start, "\\.")]
+    vframe[, cys_index := as.numeric(cdr3_start) - dot_count]
+    vframe[, cys_character := substring(seq_start, nchar(seq_start))]
+    vframe[cys_character == '.', cys_character := ""]
+    setnames(vframe, 'id', 'v_gene')
+
+    jframe = frame_data[id %like% j_type]
+    jframe[, c("cdr3_start", "CDR3_end") := tstrsplit(cdr_columns, "-", fixed = TRUE)]
+    jframe[, seq_start := substring(aligned_protseq, 1, CDR3_end)]
+    jframe[, seq_end := substring(aligned_protseq, CDR3_end)]
+    jframe[, dot_count := stringr::str_count(seq_start, "\\.")]
+    jframe[, dot_count_end := stringr::str_count(seq_end, "\\.")]
+    jframe[, phe_index := as.numeric(CDR3_end) - dot_count]
+    jframe[, phe_from_end_index := nchar(seq_end) - 1 - dot_count_end]
+    jframe[, phe_character := substring(seq_end, 1, 1)]
+    setnames(jframe, 'id', 'j_gene')
+
+    return(list(v = vframe[, c('v_gene', 'cys_index', 'cys_character')], j = jframe[, c('j_gene', 'phe_index', 'phe_from_end_index', 'phe_character')]))
+}
+
+get_cdr3_frame <- function(adjusted_data){
+    # check for matching cysteine and phenylalanine/tryptophan
+    adjusted_data[(substring(processed_cdr3, nchar(processed_cdr3)) == phe_character), frame_type := 'In']
+    adjusted_data[!(substring(processed_cdr3, nchar(processed_cdr3)) == phe_character), frame_type := 'Out']
+    return(adjusted_data)
+}
+
+get_stop_codons <- function(adjusted_data, trim_type = TRIM_TYPE, gene_type = GENE_NAME, keep_extra_cols = c()){
+    trims = get_trim_vars(trim_type)
+    genes = get_gene_order(gene_type)
+
+    require(Biostrings)
+    
+    stops = grepl("\\*", adjusted_data$processed_cdr3)
+    adjusted_data[, frame_stop := stops]
+
+    # Select relevant columns for output
+    cols2 = c(genes, trims, 'v_frame', 'j_frame', 'v_seq_len', 'j_seq_len', 'frame_stop', keep_extra_cols)
+    adjusted_data = unique(adjusted_data[, ..cols2])
+    return(adjusted_data)
 }
 
 processed_data_path <- function(sample_annotation=SAMPLE_ANNOT){
@@ -612,8 +582,10 @@ aggregate_all_subject_data <- function(directory = get_subject_motif_output_loca
 }
 
 inner_aggregation_processing <- function(together, gene_type, trim_type, only_nonprod_sites = ONLY_NONPROD_SITES, sample_annotation = SAMPLE_ANNOT){
+    genes = get_gene_order(gene_type)
+    cols = c(genes, 'processed_sequence')
     # recondense across all individuals
-    together[, index := .GRP, by = .(v_gene, j_gene, processed_sequence)]
+    together[, index := .GRP, by = cols]
     together = sum_trim_observations(together, gene_type, trim_type) 
     if (only_nonprod_sites == TRUE){
         together[frame_type == 'In' & frame_stop == FALSE, count := NA]

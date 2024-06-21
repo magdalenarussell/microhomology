@@ -510,7 +510,7 @@ class TwoStepConditionalLogisticRegressionPredictorEM(TwoStepDataTransformerEM):
         choice1_variable_matrix, choice2_variable_matrix, counts_matrix, nonrepeat_grp_matrix, all_site_mask_matrix, index_matrix, prod_mask_matrix, new_df = self.get_matrices(new_df, pretrain=False, return_df=True)
 
         # get predicted probabilities
-        probs = self.model.get_joint_prob(choice1_variable_matrix, choice2_variable_matrix, all_site_mask_matrix, prod_mask_matrix, self.model.coefs)
+        probs = self.model.get_joint_prob(choice1_variable_matrix, choice2_variable_matrix, all_site_mask_matrix, prod_mask_matrix, self.model.coefs, training_mode=False)
         # transform probs to a dataframe
         choice1_cols = self.get_mapping_dict(new_df, self.choice_colname)
         choice2_cols = self.get_mapping_dict(new_df, self.choice2_colname)

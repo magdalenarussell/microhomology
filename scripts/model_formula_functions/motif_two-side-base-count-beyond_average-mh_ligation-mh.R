@@ -1,5 +1,5 @@
 stopifnot(LEFT_NUC_MOTIF_COUNT > 0 | RIGHT_NUC_MOTIF_COUNT > 0)
-stopifnot(TRIM_TYPE == 'v-j_trim_ligation-mh')
+stopifnot(TRIM_TYPE %like% 'trim_ligation-mh')
 
 LEFT_SIDE_TERMINAL_MELT_LENGTH <<- 10
 
@@ -25,6 +25,6 @@ get_parameter_vector <- function(trims, genes){
 
 process_single_data_for_model_fit <- function(group_motif_data, whole_nucseq = get_oriented_whole_nucseqs(), gene_type = GENE_NAME, trim_type = TRIM_TYPE){
     together = process_for_two_side_base_count(group_motif_data, beyond_motif = TRUE, whole_nucseq = whole_nucseq, gene_type = gene_type, trim_type = trim_type)
-    together = get_average_mh(together)
+    together = get_average_mh(together, trim_type = TRIM_TYPE, gene_type = GENE_NAME)
     return(together)
 }

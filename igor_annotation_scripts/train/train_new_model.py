@@ -9,11 +9,11 @@ sample_count = sys.argv[3]
 LOCUS = sys.argv[4]
 assert LOCUS == 'alpha'
 
-files = glob.glob(input_directory + "/*.tsv")
+files = glob.glob(input_directory + "/*.txt")
 
 # Read each TSV file into DataFrame
 # This creates a list of dataframes
-df_list = (pd.read_csv(file, sep = '\t', header = None) for file in files)
+df_list = (pd.read_csv(file, sep = '\t', header = 0) for file in files)
 
 # Concatenate all DataFrames
 all_seqs = pd.concat(df_list, ignore_index=True)

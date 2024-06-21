@@ -1,4 +1,5 @@
 reformat_data <- function(data){
+    stopifnot(LOCUS == 'alpha')
     if (all(unique(data$productive) %in% c(TRUE, FALSE, NA))){
         data[, productive := as.character(productive)]
         data[productive == 'TRUE', productive := 'productive']
@@ -11,6 +12,8 @@ reformat_data <- function(data){
 
     cols = c('v_gene', 'j_gene', 'v_trim', 'j_trim', 'vj_insert', 'productive')
     subset = data[, ..cols]
+    setnames(data, 'd0_trim', 'd5_trim', skip_absent = TRUE)
+    setnames(data, 'd1_trim', 'd3_trim', skip_absent = TRUE)
     return(subset)
 }
 

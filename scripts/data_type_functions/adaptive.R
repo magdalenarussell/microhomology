@@ -1,17 +1,19 @@
 filter_chain <- function(data){
-    stopifnot(LOCUS %in% c('alpha', 'beta'))
-    if (LOCUS == 'alpha'){
+    stopifnot(LOCUS %in% c('alpha', 'beta', 'gamma'))
+    if (LOCUS %in% c('alpha', 'gamma')){
         rearr = 'VJ'
     } else {
         rearr = 'VDJ'
     }
-    data = data[rearrangement_type == rearr]
+    if ('rearrangement_type' %in% colnames(data)){
+        data = data[rearrangement_type == rearr]
+    }
     return(data)
 }
 
 convert_inserts <- function(data){
-    stopifnot(LOCUS %in% c('alpha', 'beta'))
-    if (LOCUS == 'alpha'){
+    stopifnot(LOCUS %in% c('alpha', 'beta', 'gamma'))
+    if (LOCUS %in% c('alpha', 'gamma')){
         data[n1_insertions == 'no data', n1_insertions := 0]
         data$vj_insert = as.numeric(data$n1_insertions)
     } else {
@@ -28,6 +30,12 @@ convert_adaptive_gene_names_to_imgt <- function(data, gene_col){
     data = copy(data) 
     stopifnot((data[[gene_col]][1] %like% 'TCR') | (data[[gene_col]][1] == 'unknown')) 
     mapping = fread('https://raw.githubusercontent.com/kmayerb/tcrdist3/master/tcrdist/db/adaptive_imgt_mapping.csv')[species == 'human']
+
+    # replace some by hand
+    mapping[adaptive == 'TCRGV07-01', imgt := 'TRGV7*01']
+    mapping[adaptive == 'TCRGV06-01', imgt := 'TRGV6*01']
+    mapping[adaptive == 'TCRGVB-01', imgt := 'TRGVB*01']
+
     gene_type = toupper(substring(gene_col, 1, 1))
     data[, c(gene_col, "allele") := tstrsplit(get(gene_col), "\\*0")]
     tog = merge(data, mapping, by.x = gene_col, by.y = 'adaptive', all.x = TRUE, allow.cartesian = TRUE)
@@ -166,10 +174,26 @@ correct_overlapping_pnucs <- function(data){
     return(data)
 }
 
+convert_frequency_to_count <- function(data, convert = FALSE){
+    if (convert == TRUE){
+        stopifnot('frequency' %in% colnames(data))
+        data[, templates := 100 * frequency]
+    } else {
+        data[templates == 'na', templates := NA]
+        data[!is.na(templates), templates := as.numeric(templates)]
+        data[templates == -1, templates := 0]
+    }
+    return(data)
+}
+
 reformat_data <- function(data){
+    stopifnot(LOCUS %in% c('alpha', 'gamma'))
     data = convert_adaptive_style_to_imgt(data) 
     data = get_possible_pnucs(data)
+    data = convert_frequency_to_count(data, convert = TRUE)
     setnames(data, 'sample_name', 'subject')
     setnames(data, 'templates', 'count')
+    setnames(data, 'd0_trim', 'd5_trim', skip_absent = TRUE)
+    setnames(data, 'd1_trim', 'd3_trim', skip_absent = TRUE)
     return(data)
 }

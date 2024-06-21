@@ -30,6 +30,8 @@ INT_MH_PARAM <<- as.numeric(args[2])
 source(paste0(MOD_PROJECT_PATH,'/mh_simulation_scripts/intermediate-mh_signal_simulator_scripts/intermediate-mh_simulator_functions.R'))
 source(paste0(MOD_PROJECT_PATH,'/scripts/data_compilation_functions.R'))
 
+stopifnot(LOCUS == 'alpha')
+
 # total number of sequences
 total = 4000000
 

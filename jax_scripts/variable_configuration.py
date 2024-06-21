@@ -20,8 +20,10 @@ class global_paramaters():
         self.insertions = getattr(self.param_config, "INSERTIONS")
         self.model_group = getattr(self.param_config, "MODEL_GROUP")
         self.gene_weight_type = getattr(self.param_config, "GENE_WEIGHT_TYPE")
-        self.chain_type = getattr(self.param_config, "CHAIN_TYPE")
         self.annotation_config = self.import_annotation_config()
+        self.chain_type = getattr(self.annotation_config, "CHAIN_TYPE")
+        self.junction_type = getattr(self.annotation_config, "JUNCTION_TYPE")
+        self.sub_junction_type = getattr(self.annotation_config, "SUB_JUNCTION_TYPE")
         self.trimming_ligation_reannotated = getattr(self.annotation_config, "TRIMMING_LIGATION_REANNOTATED")
         self.sample_annotation = getattr(self.param_config, 'SAMPLE_ANNOT')
         self.only_nonprod_sites = getattr(self.param_config, 'ONLY_NONPROD_SITES')
@@ -67,7 +69,7 @@ class global_paramaters():
 
 
     def R_input_domain_data_path(self):
-        path = self.root_path + '/meta_data/' + self.chain_type
+        path = self.root_path + '/meta_data/' + self.chain_type + '/' + self.sub_junction_type
         file_name = path + '/frame_data.tsv'
         return(file_name)
 
@@ -95,9 +97,12 @@ class global_paramaters():
         return(file_name)
 
     def validation_predictions_data_path(self, l2, validation_annotation):
-        path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type + '/validation_prediction'
+        path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type + '/' + str(validation_annotation)
         os.makedirs(path, exist_ok=True)
-        file_name = path + '/' + str(validation_annotation) + '_predicted_dist_data_L2' + str(l2) + '.tsv'
+        if self.sample_annotation:
+            file_name = path + '/predicted_dist_data_L2' + str(l2) + '.tsv'
+        else:
+            file_name = path + '/predicted_dist_data_all_annotations_L2' + str(l2) + '.tsv'
         return(file_name)
 
     def trained_coefs_path(self, l2):
