@@ -556,6 +556,9 @@ class TwoStepConditionalLogisticRegressionPredictorEM(TwoStepDataTransformerEM):
 
         # Fill missing values with a specified value
         final_df.fillna(0, inplace=True)
+
+        final_df = final_df[final_df.seq_index != 0]
+
         return(final_df)
 
     def compute_loss(self, new_df):
