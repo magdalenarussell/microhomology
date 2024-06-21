@@ -216,14 +216,15 @@ ggsave(file_name, plot = plot3_split2, width = 20, height = 22, units = 'in', dp
 tog_subset2[, log_diff := log(perseq_norm_predicted_prob) - log(norm_igor_prob)]
 
 plot_trend = ggplot(tog_subset2) +
-    geom_point(aes(x = average_annotation_MH, y = log_diff), size = 2, alpha = 0.1) +
-    geom_abline(intercept = 0, slope = 0, color = 'orange', linewidth = 1) +
+    geom_hex(aes(x = average_annotation_MH, y = log_diff), binwidth = c(0.15, 2)) +
+    geom_abline(intercept = 0, slope = 0, color = 'black', linewidth = 1) +
     geom_smooth(aes(x = average_annotation_MH, y = log_diff), method = 'lm', se = TRUE, linewidth = 1) +
     theme_cowplot(font_family = 'Arial') + 
     xlab('Average MH per annotation') +
     ylab('log(MH model probability) - log(IGoR probability)') +
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 1.5) +
+    scale_fill_viridis_c(option = "C", trans = "log10", name = 'Log-scaled counts') +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
 file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/default_TRA_igor_comparison_trend_avgMH.pdf')
