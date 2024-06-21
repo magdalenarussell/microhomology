@@ -17,7 +17,7 @@ df_scenarios = default_human_model.get_dataframe_from_fln_generated_realizations
 # df_scenarios = p3.generate(Nseqs=seq_count, mdl=default_human_model, return_scenarios=True)
 
 # retrieve actual junction feature quantities
-junction_variables = {'v_trim':'v_3_del', 'd0_trim':'d_5_del', 'd1_trim':'d_3_del', 'j_trim':'j_5_del', 'dj_insert':'dj_ins', 'vd_insert':'vd_ins'}
+junction_variables = {'v_trim':'v_3_del', 'd5_trim':'d_5_del', 'd3_trim':'d_3_del', 'j_trim':'j_5_del', 'dj_insert':'dj_ins', 'vd_insert':'vd_ins'}
 
 for var in junction_variables.keys():
     df_scenarios[var] = default_human_model.get_realization_value_from_df_scenarios(df_scenarios, junction_variables[var])

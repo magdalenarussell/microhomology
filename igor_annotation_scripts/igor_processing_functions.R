@@ -19,7 +19,7 @@ convert_adaptive_gene_names_to_imgt <- function(data, gene_col){
 
 get_whole_v_nucseqs_and_anchors <- function(){
     require(stringr)
-    whole_nucseq = fread(get(paste0('WHOLE_NUCSEQS_', LOCUS)))[gene %like% 'V']
+    whole_nucseq = fread(get(paste0('WHOLE_NUCSEQS_', LOCUS, '_only')))[gene %like% 'V']
 
     whole_nucseq[, alignment := sapply(names, function(x) str_split(x, '\\|')[[1]][13])]
     whole_nucseq[, offset := sapply(alignment, function(x) str_split(x, '\\+')[[1]][2])]
