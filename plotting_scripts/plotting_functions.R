@@ -228,7 +228,7 @@ plot_igor_coefficient_heatmap_single_group <- function(model_coef_matrix, with_v
 }
 
 plot_average_mh_coefficient_heatmap_single_group <- function(model_coef_matrix, with_values = FALSE, limits = NULL){
-    model_coef_matrix = model_coef_matrix[(coefficient %like% 'average_mh')]
+    model_coef_matrix = model_coef_matrix[(coefficient %like% 'average_mh') | (coefficient %like% 'average_interior_mh')]
 
     # convert to log_10
     model_coef_matrix$log_10_pdel = model_coef_matrix$value/log(10)
