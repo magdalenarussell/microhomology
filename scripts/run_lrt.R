@@ -47,6 +47,17 @@ if ('new_type' %in% colnames(sub_pred)){
     sub_pred = sub_pred[new_type != '0']
 }
 
+if (ONLY_NONPROD_SITES == TRUE & grepl('nonprod', PARAM_GROUP) & ('frame_type' %in% colnames(full_pred))){
+    full_pred = full_pred[frame_type == 'Out' | frame_stop == TRUE]
+    sub_pred = sub_pred[frame_type == 'Out' | frame_stop == TRUE]
+
+    full_pred[, pred_prob_sum := sum(predicted_prob), by = .(v_gene, j_gene)]
+    sub_pred[, pred_prob_sum := sum(predicted_prob), by = .(v_gene, j_gene)]
+
+    full_pred[, predicted_prob := predicted_prob/pred_prob_sum]
+    sub_pred[, predicted_prob := predicted_prob/pred_prob_sum]
+}
+
 if (SAMPLE_ANNOT == FALSE){
     full_pred[, index_prob_sum := sum(predicted_prob, na.rm = TRUE), by = index]
     full_pred[, count_prob :=  predicted_prob/index_prob_sum]
