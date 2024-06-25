@@ -72,8 +72,10 @@ convert_adaptive_style_to_imgt <- function(data){
 
         # convert trims
         for (trim in c('v_', 'd3_', 'd5_', 'j_')){
-            data = convert_trims(data, paste0(trim, 'deletions'))
-            data[[paste0(trim, 'trim')]] = as.numeric(data[[paste0(trim, 'trim')]])
+            if (paste0(trim, 'deletions') %in% colnames(data)){
+                data = convert_trims(data, paste0(trim, 'deletions'))
+                data[[paste0(trim, 'trim')]] = as.numeric(data[[paste0(trim, 'trim')]])
+            }
         }
 
         data = convert_inserts(data)
@@ -190,7 +192,7 @@ reformat_data <- function(data){
     stopifnot(LOCUS %in% c('alpha', 'gamma'))
     data = convert_adaptive_style_to_imgt(data) 
     data = get_possible_pnucs(data)
-    data = convert_frequency_to_count(data, convert = TRUE)
+    data = convert_frequency_to_count(data, convert = FALSE)
     setnames(data, 'sample_name', 'subject')
     setnames(data, 'templates', 'count')
     setnames(data, 'd0_trim', 'd5_trim', skip_absent = TRUE)
