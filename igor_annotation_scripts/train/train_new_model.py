@@ -22,15 +22,25 @@ all_seqs = pd.concat(df_list, ignore_index=True)
 imgt_species = 'Homo+sapiens'
 imgt_chain = 'TRA'
 hb_genomic = pd.read_csv('/home/mrussel2/microhomology/_ignore/imgt_tcra_sequences.tsv', sep = '\t')
-hb_genomic = hb_genomic.drop(columns = ['names'])
-hb_genomic.columns = ['value', 'name']
-hb_genomic_v = hb_genomic[hb_genomic.name.str[3] == 'V'].reset_index(drop = True)
-hb_genomic_j = hb_genomic[hb_genomic.name.str[3] == 'J'].reset_index(drop = True)
+# read anchors
+v_anchors = pd.read_csv("https://raw.githubusercontent.com/statbiophys/SONIA/master/sonia/default_models/human_T_alpha/V_gene_CDR3_anchors.csv")
+j_anchors = pd.read_csv("https://raw.githubusercontent.com/statbiophys/SONIA/master/sonia/default_models/human_T_alpha/J_gene_CDR3_anchors.csv")
+
+# merge
+hb_genomic_v = hb_genomic.drop(columns = ['names']).merge(v_anchors, on = 'gene').reset_index(drop = True)
+hb_genomic_j = hb_genomic.drop(columns = ['names']).merge(j_anchors, on = 'gene').reset_index(drop = True)
+
+# reformat
+hb_genomic_v.columns = ['value', 'name', 'anchor_index', 'gfunction']
+hb_genomic_j.columns = ['value', 'name', 'anchor_index', 'gfunction']
 hb_genomic_dict = {'V':hb_genomic_v, 'J':hb_genomic_j}
 # hb_genomic_dict = p3.imgt.download_ref_genome(imgt_species, imgt_chain, dropna=True)
 
 # create new model
 hb_mdl_0 = p3.IgorModel.make_default_from_Dataframe_dict(hb_genomic_dict)
+
+# get alignments
+df_functionality, df_CDR3 = p3.naive_align(all_seqs['V1'], hb_mdl_0)
 
 hb_mdl_new, df_likelihoods = p3.infer(all_seqs, hb_mdl_0, N_iter=10, return_likelihoods=True)
 
