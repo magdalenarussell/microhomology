@@ -24,7 +24,7 @@ LEFT_NUC_MOTIF_COUNT <<- as.numeric(1)
 # 3' motif nucleotide count
 RIGHT_NUC_MOTIF_COUNT <<- as.numeric(2)
 
-MODEL_TYPE <<- 'motif_two-side-base-count-beyond_mh-config-count_ligation-mh'
+MODEL_TYPE <<- 'motif_two-side-base-count-beyond_average-mh_ligation-mh'
 
 L2 <<- 'False'
 
@@ -52,7 +52,7 @@ for (trim_model in TRIMMING_PROB_MODEL){
             }
             coefs = fread(coef_path)
 
-            fwrite(coefs, paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/mh_simulator_experiments/motif_base_count_mh-config-count_ligation-mh_trims_from_motif_base_count_experiment_EM_ligMH_trimMH_sims/', PARAM_GROUP, '/coefs_MHprob', param, '_', param2, '_', trim_model, '_trim-model.tsv'), sep = '\t')
+            fwrite(coefs, paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/mh_simulator_experiments/motif_base_count_average-mh_ligation-mh_trims_from_motif_base_count_experiment_EM_ligMH_trimMH_sims/', PARAM_GROUP, '/coefs_MHprob', param, '_', param2, '_', trim_model, '_trim-model.tsv'), sep = '\t')
 
             v_motif_heatmap = plot_motif_coefficient_heatmap_single_group(coefs[trim_type == 'v_trim'], with_values = FALSE, limits = c(-0.450, 0.450)) + ggtitle('   V-trimming coefficients')
             j_motif_heatmap = plot_motif_coefficient_heatmap_single_group(coefs[trim_type == 'j_trim'], with_values = FALSE, limits = c(-0.450, 0.450)) + ggtitle('   J-trimming coefficients')
@@ -69,7 +69,7 @@ for (trim_model in TRIMMING_PROB_MODEL){
 
             # plot mh heatmap
             mh_heatmap = plot_ligation_mh_coefficient_heatmap_single_group(coefs, with_values = FALSE, limits = c(-0.450, 0.450))
-            config_heatmap = plot_mh_config_count_coefficient_heatmap_single_group(coefs, with_values = FALSE, limits = c(-0.450, 0.450))
+            config_heatmap = plot_average_mh_coefficient_heatmap_single_group(coefs, with_values = FALSE, limits = c(-0.450, 0.450))
 
             config_heatmap = config_heatmap + theme(legend.position = 'none')
 
@@ -93,7 +93,7 @@ for (trim_model in TRIMMING_PROB_MODEL){
     together = plot_grid(together00, NULL, together10, NULL, together01, NULL, together11, ncol = 7, rel_widths = c(1, 0.10, 1, 0.10, 1, 0.10, 1))
 
     # save plot
-    file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/mh_simulator_experiments/motif_base_count_mh-config-count_ligation-mh_trims_from_motif_base_count_experiment_EM_ligMH_trimMH_sims/', PARAM_GROUP, '/coef_heatmap_', trim_model, '_trim-model.pdf')
+    file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/mh_simulator_experiments/motif_base_count_average-mh_ligation-mh_trims_from_motif_base_count_experiment_EM_ligMH_trimMH_sims/', PARAM_GROUP, '/coef_heatmap_', trim_model, '_trim-model.pdf')
 
     ggsave(file_name, plot = together, width = 72, height = 24, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
 }
