@@ -43,6 +43,9 @@ full_df = fread(filename)
 # bootstrap data
 set.seed(1)
 total = 100
+if (!('index' %in% colnames(full_df))){
+    full_df[, index := 1:.N]
+}
 subset = unique(full_df[!is.na(count)][, c('index', 'count')])
 
 for (i in seq(total)){
@@ -53,8 +56,11 @@ for (i in seq(total)){
     setnames(sample_df, 'N', 'count')
 
     sample_tog = merge(full_df[, -c('count', 'weighted_observation', 'total_tcr')], sample_df, by = c('index'), all = TRUE)
-    sample_tog[is.na(count) & (frame_stop == TRUE | frame_type == 'Out'), count := 0]
-    sample_tog[is.na(count) & (frame_stop == FALSE & frame_type == 'In'), count := NA]
+
+    if ('frame_type' %in% colnames(sample_tog)){
+        sample_tog[is.na(count) & (frame_stop == TRUE | frame_type == 'Out'), count := 0]
+        sample_tog[is.na(count) & (frame_stop == FALSE & frame_type == 'In'), count := NA]
+    }
 
     sample_tog_proc = calculate_subject_gene_weight(sample_tog, gene_type = GENE_NAME, trim_type = TRIM_TYPE, only_nonprod_sites = ONLY_NONPROD_SITES, sample_annotation = SAMPLE_ANNOT)
     sample_tog_proc = subset_processed_data(sample_tog_proc, trim_type = TRIM_TYPE, gene_type = GENE_NAME)

@@ -103,17 +103,17 @@ get_ligation_probabilities <- function(lig_param, possible_ligs){
 adjust_trimming_probs_by_mh <- function(v_probs, j_probs, configs, int_mh_prob){
     stopifnot(int_mh_prob >= 0)
 
-    configs = get_mh_config_count(configs)
+    configs = get_average_mh(configs)
     configs = merge(configs, v_probs, by = c('v_gene', 'v_trim'))
     configs = merge(configs, j_probs, by = c('j_gene', 'j_trim'))
 
-    cols = c('v_gene', 'j_gene', 'v_trim', 'j_trim', 'v_trim_prob', 'j_trim_prob', 'mh_config_count')
+    cols = c('v_gene', 'j_gene', 'v_trim', 'j_trim', 'v_trim_prob', 'j_trim_prob', 'average_mh')
 
     combo_mh = unique(configs[, ..cols])
 
     combo_mh[, joint_trim_prob := v_trim_prob * j_trim_prob]
 
-    combo_mh[, int_mh_covariate_function := int_mh_prob*mh_config_count]
+    combo_mh[, int_mh_covariate_function := int_mh_prob*average_mh]
     combo_mh[, int_mh_softmax_per_pair := exp(int_mh_covariate_function)/sum(exp(int_mh_covariate_function)), by = .(v_gene, j_gene)]
 
     combo_mh[, mh_adj_joint_trim_prob := joint_trim_prob * int_mh_softmax_per_pair]

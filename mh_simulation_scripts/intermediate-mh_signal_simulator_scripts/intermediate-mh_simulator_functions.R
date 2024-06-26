@@ -8,15 +8,79 @@ get_igor_gene_usage_params <- function(){
     return(list(v_choice = vg, j_choice = jg))
 }
 
-get_trimming_probs <- function(){
-    jtrim_path = paste0(MOD_OUTPUT_PATH, '/meta_data/igor_alpha_j_trim_params.tsv')
-    vtrim_path = paste0(MOD_OUTPUT_PATH, '/meta_data/igor_alpha_v_trim_params.tsv')
+get_trimming_probs <- function(type){
+    stopifnot(type %in% c('igor', 'motif_two-side-base-count-beyond', 'uniform', 'mh_adjusted_motif-two-side-base-count-beyond'))
+    if (type == 'igor'){
+        jtrim_path = paste0(MOD_OUTPUT_PATH, '/meta_data/igor_alpha_j_trim_params.tsv')
+        vtrim_path = paste0(MOD_OUTPUT_PATH, '/meta_data/igor_alpha_v_trim_params.tsv')
 
-    jt = fread(jtrim_path)
-    vt = fread(vtrim_path)
+        jt = fread(jtrim_path)
+        vt = fread(vtrim_path)
+    } else if (type == 'uniform'){
+        jtrim_path = paste0(MOD_OUTPUT_PATH, '/meta_data/igor_alpha_j_trim_params.tsv')
+        vtrim_path = paste0(MOD_OUTPUT_PATH, '/meta_data/igor_alpha_v_trim_params.tsv')
 
-    vt[, v_trim_prob := 1]
-    jt[, j_trim_prob := 1]
+        jt = fread(jtrim_path)
+        vt = fread(vtrim_path)
+
+        vt[, v_trim_prob := 1]
+        jt[, j_trim_prob := 1]
+    } else if (type == 'motif_two-side-base-count-beyond'){
+        # get predictions (i.e. probabilities) from no-MH model
+        v_probs_path = get_model_predictions_file_path('False', model_type='motif_two-side-base-count-beyond')
+        j_probs_path = get_model_predictions_file_path('False', model_type='motif_two-side-base-count-beyond')
+        v_probs_path = str_replace(v_probs_path, ANNOTATION_TYPE, 'igor_sim_alpha')
+        j_probs_path = str_replace(j_probs_path, ANNOTATION_TYPE, 'igor_sim_alpha')
+        v_probs_path = str_replace(v_probs_path, PARAM_GROUP, 'nonproductive_v_trim')
+        j_probs_path = str_replace(j_probs_path, PARAM_GROUP, 'nonproductive_j_trim')
+
+        if (!file.exists(v_probs_path)){
+            print(paste0('need to produce predictions file: ', v_probs_path, ' before trimming probabilities can be obtained'))
+        }
+
+        if (!file.exists(j_probs_path)){
+            print(paste0('need to produce predictions file: ', j_probs_path, ' before trimming probabilities can be obtained'))
+        }
+
+        vt = fread(v_probs_path)
+        vcols = c('v_gene', 'v_trim', 'predicted_prob')
+        vt = unique(vt[, ..vcols])
+        setnames(vt, 'predicted_prob', 'v_trim_prob')
+
+        jt = fread(j_probs_path)
+        jcols = c('j_gene', 'j_trim', 'predicted_prob')
+        jt = unique(jt[, ..jcols])
+        setnames(jt, 'predicted_prob', 'j_trim_prob')
+    } else{
+        # get predictions (i.e. probabilities) from no-MH model
+        v_probs_path = get_model_predictions_file_path('False', model_type='motif_two-side-base-count-beyond')
+        j_probs_path = get_model_predictions_file_path('False', model_type='motif_two-side-base-count-beyond')
+        v_probs_path = str_replace(v_probs_path, ANNOTATION_TYPE, 'igor_sim_alpha')
+        j_probs_path = str_replace(j_probs_path, ANNOTATION_TYPE, 'igor_sim_alpha')
+        v_probs_path = str_replace(v_probs_path, PARAM_GROUP, 'nonproductive_v_trim_adjusted_mh')
+        j_probs_path = str_replace(j_probs_path, PARAM_GROUP, 'nonproductive_j_trim_adjusted_mh')
+
+        if (!file.exists(v_probs_path)){
+            print(paste0('need to produce predictions file: ', v_probs_path, ' before trimming probabilities can be obtained'))
+        }
+
+        if (!file.exists(j_probs_path)){
+            print(paste0('need to produce predictions file: ', j_probs_path, ' before trimming probabilities can be obtained'))
+        }
+
+        vt = fread(v_probs_path)
+        vcols = c('v_gene', 'v_trim_adjusted_mh', 'predicted_prob')
+        vt = unique(vt[, ..vcols])
+        setnames(vt, 'predicted_prob', 'v_trim_prob')
+        setnames(vt, 'v_trim_adjusted_mh', 'v_trim')
+
+        jt = fread(j_probs_path)
+        jcols = c('j_gene', 'j_trim_adjusted_mh', 'predicted_prob')
+        jt = unique(jt[, ..jcols])
+        setnames(jt, 'predicted_prob', 'j_trim_prob')
+        setnames(jt, 'j_trim_adjusted_mh', 'j_trim')
+    }
+
     vt = vt[v_trim >= LOWER_TRIM_BOUND & v_trim <= UPPER_TRIM_BOUND]
     jt = jt[j_trim >= LOWER_TRIM_BOUND & j_trim <= UPPER_TRIM_BOUND]
     return(list(v_trim = vt, j_trim = jt))
@@ -61,7 +125,9 @@ get_all_possible_configs <- function(gene_probs, trim_probs, int_mh_prob){
 
     combo_mh[, joint_trim_prob := v_trim_prob * j_trim_prob]
 
-    combo_mh[, int_mh_covariate_function := int_mh_prob*(mh_count_mid_overlap_1 + mh_count_mid_overlap_2 + mh_count_mid_overlap_3 + mh_count_mid_overlap_4)]
+    combo_mh[, average_interior_mh := (mh_count_mid_overlap_1 + mh_count_mid_overlap_2 + mh_count_mid_overlap_3 + mh_count_mid_overlap_4)/4]
+
+    combo_mh[, int_mh_covariate_function := int_mh_prob*average_interior_mh]
     combo_mh[, int_mh_softmax_per_pair := exp(int_mh_covariate_function)/sum(exp(int_mh_covariate_function)), by = .(v_gene, j_gene)]
 
     combo_mh[, mh_adj_joint_trim_prob := joint_trim_prob * int_mh_softmax_per_pair]

@@ -10,6 +10,12 @@ LEFT_MOTIF_COUNT=$4
 RIGHT_MOTIF_COUNT=$5
 MODEL_TYPE=$6
 L2=$7
+ITER=${8:-"NA"}
 
-python -i $PWD/jax_scripts/fit_twostep_model.py $ANNOTATION_TYPE $PARAM_GROUP $LEFT_MOTIF_COUNT $RIGHT_MOTIF_COUNT $MODEL_TYPE $L2 $NCPU
-echo "finished training model and making predictions"
+if [ $ITER = "NA" ]; then
+    python -i $PWD/jax_scripts/fit_twostep_model.py $ANNOTATION_TYPE $PARAM_GROUP $LEFT_MOTIF_COUNT $RIGHT_MOTIF_COUNT $MODEL_TYPE $L2 $NCPU
+    echo "finished training model and making predictions"
+else
+    python -i $PWD/jax_scripts/fit_twostep_model.py $ANNOTATION_TYPE $PARAM_GROUP $LEFT_MOTIF_COUNT $RIGHT_MOTIF_COUNT $MODEL_TYPE $L2 $NCPU $ITER
+    echo "finished training model and making predictions"
+fi

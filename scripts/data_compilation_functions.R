@@ -583,11 +583,13 @@ aggregate_all_subject_data <- function(directory = get_subject_motif_output_loca
 
 inner_aggregation_processing <- function(together, gene_type, trim_type, only_nonprod_sites = ONLY_NONPROD_SITES, sample_annotation = SAMPLE_ANNOT){
     genes = get_gene_order(gene_type)
-    cols = c(genes, 'processed_sequence')
-    # recondense across all individuals
-    together[, index := .GRP, by = cols]
+    if ('index' %in% colnames(together)){
+        cols = c(genes, 'processed_sequence')
+        # recondense across all individuals
+        together[, index := .GRP, by = cols]
+    } 
     together = sum_trim_observations(together, gene_type, trim_type) 
-    if (only_nonprod_sites == TRUE){
+    if (only_nonprod_sites == TRUE & grepl('ligation-mh', PARAM_GROUP)){
         together[frame_type == 'In' & frame_stop == FALSE, count := NA]
     }
 

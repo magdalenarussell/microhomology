@@ -24,7 +24,7 @@ NCPU <<- as.numeric(args[2])
 LEFT_NUC_MOTIF_COUNT <<- 1
 # 3' motif nucleotide count
 RIGHT_NUC_MOTIF_COUNT <<- 2
-MODEL_TYPE <<- 'motif_two-side-base-count-beyond_mh-config-count_ligation-mh'
+MODEL_TYPE <<- 'motif_two-side-base-count-beyond_average-mh_ligation-mh'
 
 TRIMMING_PROB_TYPE <<- args[3]
 stopifnot(TRIMMING_PROB_TYPE %in% c('igor', 'motif_two-side-base-count-beyond', 'uniform', 'mh_adjusted_motif-two-side-base-count-beyond'))

@@ -90,7 +90,7 @@ get_mh_prop_cols <- function(data, overlap_count, keep_gene_seqs = FALSE, prop =
     names = get_overlap_names(overlap_count, positions, genes[1], genes[2])
     seqs = paste0(genes, '_sequence')
     if (!all(names %in% colnames(data))){
-        data[, paste(names) := get_overlapping_regions(get(genes[1]), get(genes[2]), get(seqs[1]), get(seqs[2]), get(trims[1]), get(trims[2]), overlap_count, positions = positions)]
+        data[, paste(names) := get_overlapping_regions(genes[1], genes[2], get(seqs[1]), get(seqs[2]), get(trims[1]), get(trims[2]), overlap_count = overlap_count, positions = positions)]
 
         # get MH
         for (pos in positions){

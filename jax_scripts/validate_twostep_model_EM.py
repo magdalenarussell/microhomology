@@ -12,7 +12,7 @@ import pickle
 from pandarallel import pandarallel
 from patsy.contrasts import Sum
 from sklearn.model_selection import GroupKFold
-from jax_twostep_model_classes import TwoStepDataTransformerEM, TwoStepConditionalLogisticRegressorEM, TwoStepConditionalLogisticRegressionPredictorEM
+from jax_twostep_model_em_classes import TwoStepDataTransformerEM, TwoStepConditionalLogisticRegressorEM, TwoStepConditionalLogisticRegressionPredictorEM, TwoStepConditionalLogisticRegressionEvaluatorEM
 from config import MOD_OUTPUT_PATH, MOD_PROJECT_PATH
 import variable_configuration
 
@@ -25,8 +25,6 @@ L2 = sys.argv[6]
 L2 = (L2.lower() == 'true')
 NCPU = int(sys.argv[7])
 ANNOTATION_TYPE_VALIDATION = sys.argv[8]
-CALCULATE_EXPECTED_LOSS = sys.argv[9]
-CALCULATE_EXPECTED_LOSS = (CALCULATE_EXPECTED_LOSS.lower() == 'true')
 
 # initialize parallelized pandas
 pandarallel.initialize(nb_workers=NCPU, progress_bar=True)
@@ -67,8 +65,7 @@ evaluator = TwoStepConditionalLogisticRegressionEvaluatorEM(model_filename,
                                                    training_df=train_df,
                                                    validation_df=processed_data)
 
-result = evaluator.compile_evaluation_results_df(True,
-                                                 CALCULATE_EXPECTED_LOSS)
+result = evaluator.compile_evaluation_results_df(True)
 
 result['validation_data_type'] = ANNOTATION_TYPE_VALIDATION
 

@@ -10,7 +10,7 @@ output_dir = args[3]
 df = fread(input_data)
 
 # get processed sequences
-frame_file = file.path(MOD_OUTPUT_PATH, 'meta_data', 'TRA', 'frame_data.tsv')
+frame_file = file.path(MOD_OUTPUT_PATH, 'meta_data', 'TRA', 'VJ', 'frame_data.tsv')
 frames = fread(frame_file)
 
 df_tog = merge(df, frames, by = c('v_gene', 'j_gene', 'v_trim', 'j_trim', 'ligation_mh'))

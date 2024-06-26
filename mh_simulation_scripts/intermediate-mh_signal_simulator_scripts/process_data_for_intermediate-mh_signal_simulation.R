@@ -23,7 +23,7 @@ NCPU <<- as.numeric(args[1])
 LEFT_NUC_MOTIF_COUNT <<- 1
 # 3' motif nucleotide count
 RIGHT_NUC_MOTIF_COUNT <<- 2
-MODEL_TYPE <<- 'motif_two-side-base-count-beyond_interior-mh-count'
+MODEL_TYPE <<- 'motif_two-side-base-count-beyond_average-interior-mh-count'
 
 INT_MH_PARAM <<- as.numeric(args[2])
 
@@ -42,7 +42,7 @@ gene_choice_probs$v_choice = merge(gene_choice_probs$v_choice, whole_nucseq[, c(
 gene_choice_probs$j_choice = merge(gene_choice_probs$j_choice, whole_nucseq[, c('gene', 'j_gene_sequence')], by.x = 'j_gene', by.y = 'gene') 
 
 # get Vtrim and Jtrim probs
-trim_probs = get_trimming_probs()
+trim_probs = get_trimming_probs(type = 'motif_two-side-base-count-beyond')
 
 # get all possible configurations
 configs = get_all_possible_configs(gene_choice_probs, trim_probs, int_mh_prob=INT_MH_PARAM)
@@ -84,7 +84,7 @@ processed = inner_aggregation_processing(motif_data, gene_type = GENE_NAME, trim
 processed = subset_processed_data(processed, trim_type = TRIM_TYPE, gene_type = GENE_NAME)
 
 old_ANNOTATION_TYPE <<- ANNOTATION_TYPE
-ANNOTATION_TYPE <<- paste0(old_ANNOTATION_TYPE, '_from_uniform_MHprob', INT_MH_PARAM)
+ANNOTATION_TYPE <<- paste0(old_ANNOTATION_TYPE, '_from_motif_two-side-base-count-beyond_MHprob', INT_MH_PARAM)
 
 filename = processed_data_path(sample_annotation = SAMPLE_ANNOT)
 fwrite(processed, filename, sep = '\t')
