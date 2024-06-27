@@ -124,7 +124,11 @@ filter_motif_data_for_possible_sites <- function(motif_data, whole_nucseq = get_
 
     # remove counts for productive seqs, if noted
     if (only_nonprod_sites == TRUE){
-        filled_tog[frame_type == 'In' & frame_stop == FALSE, count := NA]
+        if (grepl('nonprod', PARAM_GROUP)){
+            filled_tog[frame_type == 'In' & frame_stop == FALSE, count := NA]
+        } else if (grepl('prod', PARAM_GROUP)){
+            filled_tog[frame_type == 'Out' | frame_stop == TRUE, count := NA]
+        }
     }
     return(filled_tog)
 }
