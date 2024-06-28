@@ -45,8 +45,11 @@ get_model_predictions_file_path <- function(L2, model_type=NULL, sample_annotati
     return(file_name)
 }
 
-get_validation_predictions_file_path <- function(L2, validation_annotation, sample_annotation=SAMPLE_ANNOT){
-    path = python_output_path(MODEL_TYPE)
+get_validation_predictions_file_path <- function(L2, validation_annotation, model_type=NULL, sample_annotation=SAMPLE_ANNOT){
+    if (is.null(model_type)){
+        model_type = MODEL_TYPE
+    }
+    path = python_output_path(model_type)
     if (sample_annotation==TRUE){
         file_name = paste0(path, '/', validation_annotation, '/predicted_dist_data_L2', L2, '.tsv')
     } else {
