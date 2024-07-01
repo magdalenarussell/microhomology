@@ -28,11 +28,8 @@ MODEL_TYPE <<- 'motif_two-side-base-count-beyond_average-mh_ligation-mh'
 source(paste0(MOD_PROJECT_PATH,'/scripts/data_compilation_functions.R'))
 
 # get IGoR Vtrim and Jtrim probs
-jtrim_path = paste0(MOD_OUTPUT_PATH, '/meta_data/igor_alpha_j_trim_params.tsv')
-vtrim_path = paste0(MOD_OUTPUT_PATH, '/meta_data/igor_alpha_v_trim_params.tsv')
-
-jt = fread(jtrim_path)
-vt = fread(vtrim_path)
+jt = fread(paste0(MOD_OUTPUT_PATH, '/igor_alpha/nonproductive_v-j_trim_ligation-mh/unbounded_motif_trims_bounded_-2_14/1_2_motif_two-side-base-count-beyond_average-mh_ligation-mh/igor_prob_experiment/igor_alpha_j_trim_params.tsv'))
+vt = fread(paste0(MOD_OUTPUT_PATH, '/igor_alpha/nonproductive_v-j_trim_ligation-mh/unbounded_motif_trims_bounded_-2_14/1_2_motif_two-side-base-count-beyond_average-mh_ligation-mh/igor_prob_experiment/igor_alpha_v_trim_params.tsv'))
 jt$indicator = 1
 vt$indicator = 1
 
