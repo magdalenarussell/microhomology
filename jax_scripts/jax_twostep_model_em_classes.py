@@ -679,7 +679,7 @@ class TwoStepConditionalLogisticRegressionEvaluatorEM(TwoStepDataTransformerEM):
                                   prod_mask_matrix)
         return(loss)
 
-    def compile_evaluation_results_df(self, calculate_validation_loss = False):
+    def compile_evaluation_results_df(self, training_annotation, training_productivity, calculate_validation_loss = False):
         """
         Compiles the evaluation results, including training log loss, expected log loss, and validation log loss, into a DataFrame for easy comparison and analysis.
 
@@ -689,8 +689,8 @@ class TwoStepConditionalLogisticRegressionEvaluatorEM(TwoStepDataTransformerEM):
         Returns:
             pd.DataFrame: A DataFrame containing the compiled evaluation results and the model parameters used during training and evaluation.
         """
-        result = {'training_annotation_type':[self.params.annotation_type],
-                  'productivity':[self.params.productivity],
+        result = {'training_annotation_type':training_annotation,
+                  'productivity':training_productivity,
                   'motif_length_5_end':[self.params.left_nuc_motif_count],
                   'motif_length_3_end':[self.params.right_nuc_motif_count],
                   'motif_type':[self.params.motif_type],
@@ -711,10 +711,9 @@ class TwoStepConditionalLogisticRegressionEvaluatorEM(TwoStepDataTransformerEM):
             val = results_df.copy()
             val['loss type'] = 'Log loss on validation data'
             val['log_loss'] = val_loss
+            val['validation_annotation_type'] = [self.params.annotation_type]
+            val['validation_productivity'] = [self.params.productivity]
 
             final = pd.concat([final, val], axis = 0)
 
         return(final)
-
-
-

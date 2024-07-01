@@ -19,8 +19,9 @@ args = commandArgs(trailingOnly=TRUE)
 
 ANNOTATION_TYPE <<- 'igor_alpha'
 PARAM_GROUP <<- args[1]
+PARAM_GROUP <<- 'nonproductive_v-j_trim_ligation-mh'
 source(paste0(MOD_PROJECT_PATH, '/scripts/param_groups/', PARAM_GROUP, '.R'))
-NCPU <<- as.numeric(args[2])
+NCPU<<-2
 # 5' motif nucleotide count
 LEFT_NUC_MOTIF_COUNT <<- 1
 # 3' motif nucleotide count
@@ -46,42 +47,21 @@ setnames(pred_noMH, 'predicted_prob', 'predicted_prob_noMH')
 tog = merge(pred, pred_noMH)
 
 tog[, log_diff := log(predicted_prob) - log(predicted_prob_noMH)]
+tog[, diff := predicted_prob - predicted_prob_noMH]
 
 plot_trend = ggplot(tog) +
-    geom_hex(aes(x = ligation_mh, y = log_diff)) +
+    geom_hex(aes(x = ligation_mh, y = diff)) +
     geom_abline(intercept = 0, slope = 0, color = 'black', linewidth = 1) +
-    geom_smooth(aes(x = ligation_mh, y = log_diff), method = 'lm', se = TRUE, linewidth = 1) +
+    geom_smooth(aes(x = ligation_mh, y = diff), method = 'lm', se = TRUE, linewidth = 1) +
     theme_cowplot(font_family = 'Arial') + 
     xlab('MH nucleotides in annotation') +
-    ylab('log(MH model probability) - log(noMH model probability)') +
+    ylab('MH model probability - noMH model probability') +
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 1.5) +
-    scale_fill_viridis_c(option = "C", trans = "log10", name = 'Log-scaled counts') +
+    scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/default_TRA_mh_comparison_trend_ligationMH.pdf')
-dir.create(dirname(file_name), recursive = TRUE)
-
-ggsave(file_name, plot = plot_trend, width = 10, height = 8, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
-
-tog[, pred_sum := sum(predicted_prob), by = .(v_gene, j_gene, v_trim, j_trim, average_mh)]
-tog_trim = tog[, sum(predicted_prob_noMH), by = .(v_gene, j_gene, v_trim, j_trim, average_mh, pred_sum)]
-setnames(tog_trim, 'V1', 'pred_sum_noMH')
-tog_trim[, log_diff := log(pred_sum) - log(pred_sum_noMH)]
-
-plot_trend = ggplot(tog_trim) +
-    geom_hex(aes(x = average_mh, y = log_diff)) +
-    geom_abline(intercept = 0, slope = 0, color = 'black', linewidth = 1) +
-    geom_smooth(aes(x = average_mh, y = log_diff), method = 'lm', se = TRUE, linewidth = 1) +
-    theme_cowplot(font_family = 'Arial') + 
-    xlab('Average MH nucleotides in trimming annotation') +
-    ylab('log(MH model trim probability) - log(noMH model trim probability)') +
-    background_grid(major = 'xy') + 
-    panel_border(color = 'gray60', size = 1.5) +
-    scale_fill_viridis_c(option = "C", trans = "log10", name = 'Log-scaled counts') +
-    theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
-
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/default_TRA_mh_comparison_trend_averageMH.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_mh_comparison_trend_ligationMH.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = plot_trend, width = 10, height = 8, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
@@ -103,22 +83,20 @@ tog_agg[, perseq_pred_agg := pred_agg/zeroMH_annotation_count]
 tog_agg[, perseq_pred_agg_noMH := pred_agg_noMH/zeroMH_annotation_count]
 
 tog_agg[, log_diff := log(perseq_pred_agg) - log(perseq_pred_agg_noMH)]
+tog_agg[, diff := perseq_pred_agg - perseq_pred_agg_noMH]
 
 plot_trend = ggplot(tog_agg) +
-    geom_hex(aes(x = average_annotation_MH, y = log_diff)) +
+    geom_hex(aes(x = average_annotation_MH, y = diff)) +
     geom_abline(intercept = 0, slope = 0, color = 'black', linewidth = 1) +
-    geom_smooth(aes(x = average_annotation_MH, y = log_diff), method = 'lm', se = TRUE, linewidth = 1) +
+    geom_smooth(aes(x = average_annotation_MH, y = diff), method = 'lm', se = TRUE, linewidth = 1) +
     theme_cowplot(font_family = 'Arial') + 
-    xlab('Average MH per collapsed annotation') +
-    ylab('log(MH model probability) - log(noMH model probability)') +
+    xlab('Average MH per annotation') +
+    ylab("MH model probability - noMH model probability")+
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 1.5) +
-    scale_fill_viridis_c(option = "C", trans = "log10", name = 'Log-scaled counts') +
+    scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/default_TRA_mh_comparison_trend_collapsed.pdf')
-dir.create(dirname(file_name), recursive = TRUE)
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_noMH_comparison_trend_avgMH_nonlog.pdf')
 
-ggsave(file_name, plot = plot_trend, width = 10, height = 8, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
-
-
+ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)

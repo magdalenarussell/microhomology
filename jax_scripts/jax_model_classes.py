@@ -1149,7 +1149,7 @@ class ConditionalLogisticRegressionEvaluator(DataTransformer):
                                   mask_matrix)
         return(loss)
 
-    def compile_evaluation_results_df(self, calculate_validation_loss = False, calculate_expected_loss=False):
+    def compile_evaluation_results_df(self, training_annotation, training_productivity, calculate_validation_loss = False, calculate_expected_loss=False):
         """
         Compiles the model evaluation results, including log loss on training data, expected log loss through
         cross-validation, and log loss on validation data, into a DataFrame.
@@ -1163,8 +1163,8 @@ class ConditionalLogisticRegressionEvaluator(DataTransformer):
         Returns:
             pd.DataFrame: A DataFrame containing the compiled evaluation results and model parameters.
         """
-        result = {'training_annotation_type':[self.params.annotation_type],
-                  'productivity':[self.params.productivity],
+        result = {'training_annotation_type': training_annotation,
+                  'productivity':training_productivity,
                   'motif_length_5_end':[self.params.left_nuc_motif_count],
                   'motif_length_3_end':[self.params.right_nuc_motif_count],
                   'motif_type':[self.params.motif_type],
@@ -1187,6 +1187,8 @@ class ConditionalLogisticRegressionEvaluator(DataTransformer):
             e = results_df.copy()
             e['loss_type'] = 'Expected log loss across training data'
             e['log_loss'] = self.expected_log_loss
+            e['validation_annotation_type'] = [self.params.annotation_type]
+            e['validation_productivity'] = [self.params.productivity]
 
             final = pd.concat([final, e], axis = 0)
 
@@ -1195,6 +1197,8 @@ class ConditionalLogisticRegressionEvaluator(DataTransformer):
             val = results_df.copy()
             val['loss type'] = 'Log loss on validation data'
             val['log_loss'] = val_loss
+            val['validation_annotation_type'] = [self.params.annotation_type]
+            val['validation_productivity'] = [self.params.productivity]
 
             final = pd.concat([final, val], axis = 0)
 

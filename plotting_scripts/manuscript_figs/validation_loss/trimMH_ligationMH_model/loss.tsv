@@ -1,0 +1,37 @@
+long_model_type	long_loss_type	log_loss
+"1x2motif + two-side base-count beyond +
+average trim MH + ligation MH
+(26 params)"	"TRA training dataset
+(IGoR-annotated)"	4.8797665
+"1x2motif + two-side base-count beyond +
+average trim MH + ligation MH
+(26 params)"	"TRA testing dataset
+(Adaptive-annotated)"	4.87994
+"1x2motif + two-side base-count beyond +
+average trim MH + ligation MH
+(26 params)"	"TRA training dataset
+(IGoR-annotated)"	4.8265676
+"1x2motif + two-side base-count beyond +
+average trim MH + ligation MH
+(26 params)"	"TRA testing dataset
+(Adaptive-annotated)"	4.1617184
+"1x2motif + two-side base-count-beyond
+(24 params)"	"TRA training dataset
+(IGoR-annotated)"	4.917043
+"1x2motif + two-side base-count-beyond
+(24 params)"	"TRA testing dataset
+(Adaptive-annotated)"	4.8872194
+"1x2motif + two-side base-count-beyond
+(24 params)"	"TRA training dataset
+(IGoR-annotated)"	4.835575
+"1x2motif + two-side base-count-beyond
+(24 params)"	"TRA testing dataset
+(Adaptive-annotated)"	4.169221
+null (0 params)	"TRA training dataset
+(IGoR-annotated)"	5.5289736
+null (0 params)	"TRA testing dataset
+(Adaptive-annotated)"	5.550914
+null (0 params)	"TRA training dataset
+(IGoR-annotated)"	4.924741
+null (0 params)	"TRA testing dataset
+(Adaptive-annotated)"	4.9223633

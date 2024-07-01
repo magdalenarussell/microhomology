@@ -15,8 +15,6 @@ library(RhpcBLASctl)
 omp_set_num_threads(1)
 blas_set_num_threads(1)
 
-args = commandArgs(trailingOnly=TRUE)
-
 ANNOTATION_TYPE <<- 'igor_alpha'
 PARAM_GROUP <<- 'nonproductive_v-j_trim_ligation-mh'
 source(paste0(MOD_PROJECT_PATH, '/scripts/param_groups/', PARAM_GROUP, '.R'))
@@ -80,8 +78,8 @@ tog_subset[nonzeroMH_annotation_count < 8, binned_nonzeroMH_annotation_count := 
 tog_subset[nonzeroMH_annotation_count >= 8, binned_nonzeroMH_annotation_count := '8 or more']
 
 # get gene probabilities from IGoR (filter out low prob genes)
-j_usage = fread(paste0(MOD_OUTPUT_PATH, '/meta_data/igor_alpha_jchoice_params.tsv'))
-v_usage = fread(paste0(MOD_OUTPUT_PATH, '/meta_data/igor_alpha_vchoice_params.tsv'))
+j_usage = fread(paste0(MOD_OUTPUT_PATH, '/igor_alpha/nonproductive_v-j_trim_ligation-mh/unbounded_motif_trims_bounded_-2_14/1_2_motif_two-side-base-count-beyond_average-mh_ligation-mh/igor_prob_experiment/igor_alpha_jchoice_params.tsv'))
+v_usage = fread(paste0(MOD_OUTPUT_PATH, '/igor_alpha/nonproductive_v-j_trim_ligation-mh/unbounded_motif_trims_bounded_-2_14/1_2_motif_two-side-base-count-beyond_average-mh_ligation-mh/igor_prob_experiment/igor_alpha_vchoice_params.tsv'))
 j_usage$indicator = 1
 v_usage$indicator = 1
 
@@ -97,7 +95,7 @@ tog_subset2[, diff := perseq_norm_predicted_prob - norm_igor_prob]
 
 
 plot_trend = ggplot(tog_subset2) +
-    geom_hex(aes(x = average_annotation_MH, y = log_diff), binwidth = c(0.14, 1)) +
+    geom_hex(aes(x = average_annotation_MH, y = log_diff), binwidth = c(0.14, 5)) +
     # geom_hex(aes(x = average_annotation_MH, y = log_diff)) +
     geom_abline(intercept = 0, slope = 0, color = 'black', linewidth = 1) +
     geom_smooth(aes(x = average_annotation_MH, y = log_diff), method = 'lm', se = TRUE, linewidth = 1) +
@@ -109,7 +107,7 @@ plot_trend = ggplot(tog_subset2) +
     scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/default_TRA_igor_comparison_trend_avgMH.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_trend_avgMH.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
@@ -126,7 +124,7 @@ plot_trend = ggplot(tog_subset2) +
     scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/default_TRA_igor_comparison_trend_avgMH_nonlog.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_trend_avgMH_nonlog.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)

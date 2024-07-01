@@ -56,6 +56,15 @@ if (ONLY_NONPROD_SITES == TRUE & grepl('nonprod', PARAM_GROUP) & ('frame_type' %
 
     full_pred[, predicted_prob := predicted_prob/pred_prob_sum]
     sub_pred[, predicted_prob := predicted_prob/pred_prob_sum]
+} else if (ONLY_NONPROD_SITES == TRUE & grepl('prod', PARAM_GROUP) & ('frame_type' %in% colnames(full_pred))){
+    full_pred = full_pred[frame_type == 'In' & frame_stop == FALSE]
+    sub_pred = sub_pred[frame_type == 'In' | frame_stop == FALSE]
+
+    full_pred[, pred_prob_sum := sum(predicted_prob), by = .(v_gene, j_gene)]
+    sub_pred[, pred_prob_sum := sum(predicted_prob), by = .(v_gene, j_gene)]
+
+    full_pred[, predicted_prob := predicted_prob/pred_prob_sum]
+    sub_pred[, predicted_prob := predicted_prob/pred_prob_sum]
 }
 
 if (SAMPLE_ANNOT == FALSE){

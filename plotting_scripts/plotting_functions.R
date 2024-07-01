@@ -445,23 +445,23 @@ plot_motif_coefficient_heatmap_single_group <- function(model_coef_matrix, with_
     return(plot)
 }
 
-plot_model_evaluation_loss_paracoord <- function(eval_data, loss_bound = NULL, color_palette = NULL, expand_var = 4) {
-    if (is.factor(eval_data$loss_type)){
-        types = levels(eval_data$loss_type)
+plot_model_evaluation_loss_paracoord <- function(eval_data, loss_bound = NULL, color_palette = NULL, expand_var = 4, productivity_facet = TRUE) {
+    if (is.factor(eval_data$long_loss_type)){
+        types = levels(eval_data$long_loss_type)
         last = types[length(types)]
     } else {
-        types = unique(eval_data$loss_type)
+        types = unique(eval_data$long_loss_type)
         last = types[length(types)]
     }
     
-    label_data = eval_data[loss_type == last]
+    label_data = eval_data[long_loss_type == last]
 
     # create plot
     require(ggrepel)
     plot = ggplot(eval_data) +
-        geom_point(aes(y = log_loss, x = loss_type, color = model_type), size = 14)+
-        geom_line(aes(y = log_loss, x = loss_type, group = model_type, color = model_type), size = 9, alpha = 0.8)+
-        geom_text_repel(data = label_data, aes(y = log_loss, x = loss_type, label = model_type, color = model_type), nudge_x = 0.2, fontface = "bold", size = 13, direction = 'y', hjust = 0, point.padding = 1, max.overlaps = Inf, lineheight = 0.8) +
+        geom_point(aes(y = log_loss, x = long_loss_type, color = long_model_type), size = 14)+
+        geom_line(aes(y = log_loss, x = long_loss_type, group = long_model_type, color = long_model_type), size = 9, alpha = 0.8)+
+        geom_text_repel(data = label_data, aes(y = log_loss, x = long_loss_type, label = long_model_type, color = long_model_type), nudge_x = 0.2, fontface = "bold", size = 13, direction = 'y', hjust = 0, point.padding = 1, max.overlaps = Inf, lineheight = 0.8) +
         theme_cowplot(font_family = 'Arial') + 
         xlab(' ') +
         ylab('Log loss\n') +
@@ -469,6 +469,9 @@ plot_model_evaluation_loss_paracoord <- function(eval_data, loss_bound = NULL, c
         panel_border(color = 'gray60', size = 1.5) +
         theme(legend.position = 'none', text = element_text(size = 44), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 44), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))  +
         scale_x_discrete(expand = expansion(add = c(0.2, expand_var)))
+    if (productivity_facet == TRUE){
+        plot = plot + facet_wrap(~validation_productivity, ncol = 1)
+    }
 
     if (!is.null(loss_bound)){
         plot = plot +
@@ -477,6 +480,8 @@ plot_model_evaluation_loss_paracoord <- function(eval_data, loss_bound = NULL, c
 
     if (!is.null(color_palette)){
         plot = plot + scale_color_manual(values = color_palette)
+    } else {
+        plot = plot + scale_color_brewer(palette = 'Dark2')
     }
 
     return(plot)

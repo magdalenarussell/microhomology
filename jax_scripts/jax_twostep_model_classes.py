@@ -56,9 +56,13 @@ class TwoStepDataTransformer(DataTransformer):
         df['all_site_indicator'] = 1.0
 
         if self.params.only_nonprod_sites:
-            df['prod_domain_indicator'] = 0.0
-            df.loc[df.frame_type == 'Out', 'prod_domain_indicator'] = 1.0
-            df.loc[df.frame_stop == True, 'prod_domain_indicator'] = 1.0
+            if self.params.productivity == 'nonproductive':
+                df['prod_domain_indicator'] = 0.0
+                df.loc[df.frame_type == 'Out', 'prod_domain_indicator'] = 1.0
+                df.loc[df.frame_stop == True, 'prod_domain_indicator'] = 1.0
+            elif self.params.productivity == 'productive':
+                df['prod_domain_indicator'] = 0.0
+                df.loc[(df.frame_type == 'In') & (df.frame_stop == False), 'prod_domain_indicator'] = 1.0
         else:
             df['prod_domain_indicator'] = 1.0
         return df
@@ -963,7 +967,8 @@ class TwoStepConditionalLogisticRegressionEvaluator(TwoStepDataTransformer):
                                   prod_mask_matrix)
         return(loss)
 
-    def compile_evaluation_results_df(self, calculate_validation_loss = False, calculate_expected_loss=False):
+    def compile_evaluation_results_df(self, training_annotation, training_productivity, calculate_validation_loss = False, calculate_expected_loss=False):
+
         """
         Compiles the evaluation results, including training log loss, expected log loss, and validation log loss, into a DataFrame for easy comparison and analysis.
 
@@ -974,8 +979,8 @@ class TwoStepConditionalLogisticRegressionEvaluator(TwoStepDataTransformer):
         Returns:
             pd.DataFrame: A DataFrame containing the compiled evaluation results and the model parameters used during training and evaluation.
         """
-        result = {'training_annotation_type':[self.params.annotation_type],
-                  'productivity':[self.params.productivity],
+        result = {'training_annotation_type':training_annotation,
+                  'productivity':training_productivity,
                   'motif_length_5_end':[self.params.left_nuc_motif_count],
                   'motif_length_3_end':[self.params.right_nuc_motif_count],
                   'motif_type':[self.params.motif_type],
@@ -998,6 +1003,8 @@ class TwoStepConditionalLogisticRegressionEvaluator(TwoStepDataTransformer):
             e = results_df.copy()
             e['loss_type'] = 'Expected log loss across training data'
             e['log_loss'] = self.expected_log_loss
+            e['validation_annotation_type'] = [self.params.annotation_type]
+            e['validation_productivity'] = [self.params.productivity]
 
             final = pd.concat([final, e], axis = 0)
 
@@ -1006,6 +1013,8 @@ class TwoStepConditionalLogisticRegressionEvaluator(TwoStepDataTransformer):
             val = results_df.copy()
             val['loss type'] = 'Log loss on validation data'
             val['log_loss'] = val_loss
+            val['validation_annotation_type'] = [self.params.annotation_type]
+            val['validation_productivity'] = [self.params.productivity]
 
             final = pd.concat([final, val], axis = 0)
 

@@ -174,13 +174,13 @@ filter_by_productivity <- function(data){
     # when we are looking at ligation MH (e.g. with zero insertion sequences)
     # within VJ junctions, we will do productivity filtering later
     stopifnot(PRODUCTIVITY %in% c('productive', 'nonproductive', 'both'))
-    if (PRODUCTIVITY == 'productive' & JUNCTION_TYPE == 'VDJ'){
+    if (PRODUCTIVITY == 'productive' & !(grepl('ligation', PARAM_GROUP))){
         if (all(unique(data$productive) %in% c(TRUE, FALSE))){
             data = data[productive == TRUE]
         } else {
             data = data[productive == 'productive']
         }
-    } else if (PRODUCTIVITY == 'nonproductive' & JUNCTION_TYPE == 'VDJ'){
+    } else if (PRODUCTIVITY == 'nonproductive' & !(grepl('ligation', PARAM_GROUP))){
         if (all(unique(data$productive) %in% c(TRUE, FALSE))){
             data = data[productive == FALSE]
         } else {
@@ -590,7 +590,11 @@ inner_aggregation_processing <- function(together, gene_type, trim_type, only_no
     } 
     together = sum_trim_observations(together, gene_type, trim_type) 
     if (only_nonprod_sites == TRUE & grepl('ligation-mh', PARAM_GROUP)){
-        together[frame_type == 'In' & frame_stop == FALSE, count := NA]
+        if (grepl('nonprod', PARAM_GROUP)){
+            together[frame_type == 'In' & frame_stop == FALSE, count := NA]
+        } else if (grepl('prod', PARAM_GROUP)){
+            together[frame_type == 'Out' | frame_stop == TRUE, count := NA]
+        }
     }
 
     if (MODEL_TYPE %like% 'dna_shape') {

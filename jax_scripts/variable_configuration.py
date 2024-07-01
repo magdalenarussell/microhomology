@@ -41,13 +41,15 @@ class global_paramaters():
         annotation_config = importlib.import_module(f"annotation_configs.{root_annotation}")
         return(annotation_config)
 
-    def R_processed_data_path(self, sample_annotation = None, annotation = None):
+    def R_processed_data_path(self, param_group = None, sample_annotation = None, annotation = None):
         if annotation == None:
             annotation = self.annotation_type
+        if param_group == None:
+            param_group = self.param_group
         if sample_annotation == None:
             sample_annotation = self.sample_annotation
 
-        path = self.root_path + '/' + annotation + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type
+        path = self.root_path + '/' + annotation + '/' + param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type
         if sample_annotation:
             file_name = path + '/processed_data.tsv'
         else:
