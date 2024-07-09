@@ -43,40 +43,63 @@ pred[, nonzeroMH_annotation_count := sum(nonzeroMH_indicator), by = index]
 pred[, average_annotation_MH := mean(ligation_mh), by = index]
 pred[, total_annotations := .N, by = index]
 
-# normalize probabilities
-igor_probs = pred[ligation_mh == 0]
-igor_probs[, igor_sum := sum(norm_default_igor_prob, na.rm = TRUE), by = .(v_gene, j_gene)]
-igor_probs[, norm_igor_prob := norm_default_igor_prob/igor_sum]
+# get igor probabilities
+# get IGoR Vtrim and Jtrim probs
+jt = fread(paste0(MOD_OUTPUT_PATH, '/igor_alpha/nonproductive_v-j_trim_ligation-mh/unbounded_motif_trims_bounded_-2_14/1_2_motif_two-side-base-count-beyond_average-mh_ligation-mh/igor_prob_experiment/igor_alpha_j_trim_params.tsv'))
+vt = fread(paste0(MOD_OUTPUT_PATH, '/igor_alpha/nonproductive_v-j_trim_ligation-mh/unbounded_motif_trims_bounded_-2_14/1_2_motif_two-side-base-count-beyond_average-mh_ligation-mh/igor_prob_experiment/igor_alpha_v_trim_params.tsv'))
+jt$indicator = 1
+vt$indicator = 1
 
-# remove indices which do not have at least one zeroMH annotation (these are
-# all edge cases near trimming domain restriction)
-pred_subset = pred[!(zeroMH_annotation_count == 0)]
-igor_probs_subset = igor_probs[!(zeroMH_annotation_count == 0)]
+igor_probs = merge(vt, jt, by = "indicator", allow.cartesian = TRUE)
+igor_probs[, igor_joint_prob := v_trim_prob * j_trim_prob]
+igor_probs[, igor_sum := sum(igor_joint_prob, na.rm = TRUE), by = .(v_gene, j_gene)]
+igor_probs[, norm_igor_joint_prob := igor_joint_prob/igor_sum]
 
-# re-normalize
-pred_subset[, pred_sum := sum(predicted_prob), by = .(v_gene, j_gene)]
-igor_probs_subset[, igor_sum := sum(norm_igor_prob), by = .(v_gene, j_gene)]
+# join everything together
+cols = c('index', 'v_gene', 'j_gene', 'v_trim', 'j_trim', 'ligation_mh')
+pcols = c('index', 'v_gene', 'j_gene', 'v_trim', 'j_trim', 'ligation_mh', 'processed_sequence', 'predicted_prob')
+icols = c('v_gene', 'j_gene', 'v_trim', 'j_trim', 'ligation_mh', 'norm_igor_joint_prob')
 
-pred_subset[, predicted_prob := predicted_prob/pred_sum]
-igor_probs_subset[, norm_igor_prob := norm_igor_prob/igor_sum]
+igor_probs$ligation_mh = 0
+igor_tog = merge(igor_probs[, ..icols], unique(pred[ligation_mh == 0][, ..cols]), by = c('v_gene', 'j_gene', 'v_trim', 'j_trim', 'ligation_mh'))
 
-# aggregate probabilities by index
-cols = c('v_gene', 'j_gene', 'seq_index', 'zeroMH_annotation_count', 'nonzeroMH_annotation_count', 'average_annotation_MH', 'total_annotations')
-pred_agg = pred_subset[, sum(predicted_prob, na.rm = TRUE), by = cols]
-setnames(pred_agg, 'V1', 'summed_norm_predicted_prob')
+# .x vars are mh mapping and .y vars are igor mapping
+tog = merge(pred[, ..pcols], igor_tog, by = c('index', 'v_gene', 'j_gene'), allow.cartesian = TRUE)
+tog = tog[!((ligation_mh.x == 0 & ligation_mh.y == 0) & (v_trim.x != v_trim.y | j_trim.x != j_trim.y))]
 
-# get per-zero-annotation estimated probability by index
-pred_agg[, perseq_norm_predicted_prob := summed_norm_predicted_prob/zeroMH_annotation_count]
+# get the number of mh annotations that map to each igor annotation
+tog[, mh_to_igor_annot_count := .N, by = .(v_trim.y, j_trim.y, ligation_mh.y, index, v_gene, j_gene)]
 
-# combine
-tog_subset = merge(igor_probs_subset, pred_agg, by = cols)
+# get the number of igor annotations that map to each mh annotation
+tog[, igor_to_mh_annot_count := .N, by = .(v_trim.x, j_trim.x, ligation_mh.x, index, v_gene, j_gene)]
 
-# bin total annotations and nonzeroMH annotation count
-tog_subset[total_annotations >= 12, binned_total_annotations := '12 or more']
-tog_subset[total_annotations < 12, binned_total_annotations := as.character(total_annotations)]
-tog_subset[nonzeroMH_annotation_count < 8, binned_nonzeroMH_annotation_count := as.character(nonzeroMH_annotation_count)]
-tog_subset[nonzeroMH_annotation_count >= 8, binned_nonzeroMH_annotation_count := '8 or more']
+# Adjust probabilities by weighting them by mapping count
+tog[, adjusted_predicted_prob := predicted_prob/igor_to_mh_annot_count]
+tog[, adjusted_norm_igor_joint_prob := norm_igor_joint_prob/mh_to_igor_annot_count]
 
+# Aggregate MH annotation probabilities from IGOR probabilities
+mh_annot = tog[, sum(adjusted_norm_igor_joint_prob), by = .(index, v_gene, j_gene, v_trim.x, j_trim.x, ligation_mh.x, igor_to_mh_annot_count)]
+mh_annot[, sum_converted_igor_prob := sum(V1), by = .(v_gene, j_gene)]
+mh_annot[, norm_converted_mh_annot_igor_prob := V1/sum_converted_igor_prob]
+
+# merge with mh model predictions
+mh_tog = merge(pred, mh_annot, by.x = c('index', 'v_gene', 'j_gene', 'v_trim', 'j_trim', 'ligation_mh'), by.y = c('index', 'v_gene', 'j_gene', 'v_trim.x', 'j_trim.x', 'ligation_mh.x'))
+
+# Aggregate IGOR annotation probabilities from MH probabilities
+tog[ligation_mh.x == 0, nonzeroMH := 0]
+tog[ligation_mh.x > 0, nonzeroMH := 1]
+tog[, sum_mh_configs := sum(nonzeroMH), by = .(index, v_gene, j_gene, v_trim.y, j_trim.y)]
+tog[, sum_mh := sum(ligation_mh.x), by = .(index, v_gene, j_gene, v_trim.y, j_trim.y)]
+igor_annot = tog[, sum(adjusted_predicted_prob), by = .(index, v_gene, j_gene, v_trim.y, j_trim.y, ligation_mh.y, mh_to_igor_annot_count, sum_mh, sum_mh_configs)]
+igor_annot[, avg_mh := sum_mh/mh_to_igor_annot_count]
+igor_annot[, mh_config_prop := sum_mh_configs/mh_to_igor_annot_count]
+igor_annot[, sum_converted_mh_prob := sum(V1), by = .(v_gene, j_gene)]
+igor_annot[, norm_converted_igor_annot_mh_prob := V1/sum_converted_mh_prob]
+
+## merge with igor model predictions
+igor_tog2 = merge(igor_tog, igor_annot, by.x = c('index', 'v_gene', 'j_gene', 'v_trim', 'j_trim', 'ligation_mh'), by.y = c('index', 'v_gene', 'j_gene', 'v_trim.y', 'j_trim.y', 'ligation_mh.y'))
+
+# subset by gene usage
 # get gene probabilities from IGoR (filter out low prob genes)
 j_usage = fread(paste0(MOD_OUTPUT_PATH, '/igor_alpha/nonproductive_v-j_trim_ligation-mh/unbounded_motif_trims_bounded_-2_14/1_2_motif_two-side-base-count-beyond_average-mh_ligation-mh/igor_prob_experiment/igor_alpha_jchoice_params.tsv'))
 v_usage = fread(paste0(MOD_OUTPUT_PATH, '/igor_alpha/nonproductive_v-j_trim_ligation-mh/unbounded_motif_trims_bounded_-2_14/1_2_motif_two-side-base-count-beyond_average-mh_ligation-mh/igor_prob_experiment/igor_alpha_vchoice_params.tsv'))
@@ -87,44 +110,96 @@ joint_usage = merge(v_usage, j_usage, by = 'indicator', allow.cartesian = TRUE)
 joint_usage[, joint_gene_usage := v_gene_prob * j_gene_prob]
 
 ## merge and restrict to genes that have high usage in IGoR
-tog_subset = merge(tog_subset, joint_usage, by = c('v_gene', 'j_gene'))
-tog_subset2 = tog_subset[joint_gene_usage > 1e-4]
+igor_tog2_merge = merge(igor_tog2, joint_usage, by = c('v_gene', 'j_gene'))
+igor_tog_subset = igor_tog2_merge[joint_gene_usage > 1e-4]
 
-tog_subset2[, log_diff := log10(perseq_norm_predicted_prob) - log10(norm_igor_prob)]
-tog_subset2[, diff := perseq_norm_predicted_prob - norm_igor_prob]
+mh_tog_merge = merge(mh_tog, joint_usage, by = c('v_gene', 'j_gene'))
+mh_tog_subset = mh_tog_merge[joint_gene_usage > 1e-4]
 
+# make sure all probabilities are normalized
+mh_tog_subset[, predicted_prob2 := predicted_prob/sum(predicted_prob), by = .(v_gene, j_gene)]
+igor_tog_subset[, norm_igor_joint_prob2 := norm_igor_joint_prob/sum(norm_igor_joint_prob), by = .(v_gene, j_gene)]
 
-plot_trend = ggplot(tog_subset2) +
-    geom_hex(aes(x = average_annotation_MH, y = log_diff), binwidth = c(0.14, 5)) +
-    # geom_hex(aes(x = average_annotation_MH, y = log_diff)) +
-    geom_abline(intercept = 0, slope = 0, color = 'black', linewidth = 1) +
-    geom_smooth(aes(x = average_annotation_MH, y = log_diff), method = 'lm', se = TRUE, linewidth = 1) +
+# get diff
+mh_tog_subset[, diff := predicted_prob2 - norm_converted_mh_annot_igor_prob]
+igor_tog_subset[, diff := norm_converted_igor_annot_mh_prob - norm_igor_joint_prob2]
+
+# Perform correlation analysis
+mh_cor = cor(mh_tog_subset$diff, mh_tog_subset$ligation_mh)
+igor_cor = cor(igor_tog_subset$diff, igor_tog_subset$avg_mh)
+mh_reg = lm(diff ~ ligation_mh + igor_to_mh_annot_count, data = mh_tog_subset)
+igor_reg = lm(diff ~ avg_mh + mh_to_igor_annot_count, data = igor_tog_subset)
+
+# compare MH annotation probabilities
+plot_trend = ggplot(mh_tog_subset) +
+    geom_hex(aes(x = predicted_prob2, y = norm_converted_mh_annot_igor_prob)) +
+    geom_abline(intercept = 0, slope = 1, color = 'black', linewidth = 1) +
     theme_cowplot(font_family = 'Arial') + 
-    xlab('Average MH per annotation') +
-    ylab(expression(log[10]("MH model probability") - log[10]("IGoR probability")))+
+    ylab("Aggregated IGoR probability\n(MH annotation space)") +
+    xlab("MH model probability") +
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 1.5) +
     scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_trend_avgMH.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_mh_annotation.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
 
-plot_trend = ggplot(tog_subset2) +
-    geom_hex(aes(x = average_annotation_MH, y = diff)) +
+plot_trend = ggplot(mh_tog_subset) +
+    geom_hex(aes(x = ligation_mh, y = diff)) +
     geom_abline(intercept = 0, slope = 0, color = 'black', linewidth = 1) +
-    geom_smooth(aes(x = average_annotation_MH, y = diff), method = 'lm', se = TRUE, linewidth = 1) +
+    geom_smooth(aes(x = ligation_mh, y = diff), method = 'lm', se = TRUE, linewidth = 1) +
     theme_cowplot(font_family = 'Arial') + 
-    xlab('Average MH per annotation') +
-    ylab("MH model probability - IGoR probability")+
+    xlab('MH within trimming/ligation annotation') +
+    ylab("MH model probability - aggregated IGoR probability\n(MH annotation space)")+
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 1.5) +
     scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_trend_avgMH_nonlog.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_mh_annotation_ligMH.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
+
+
+
+# compare IGoR annotation probabilities
+plot_trend = ggplot(igor_tog_subset) +
+    geom_hex(aes(x = norm_converted_igor_annot_mh_prob, y = norm_igor_joint_prob2)) +
+    geom_abline(intercept = 0, slope = 1, color = 'black', linewidth = 1) +
+    theme_cowplot(font_family = 'Arial') + 
+    ylab("IGoR probability")+
+    xlab("Aggregated MH model probability\n(IGoR annotation space)") +
+    background_grid(major = 'xy') + 
+    panel_border(color = 'gray60', size = 1.5) +
+    scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
+    theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
+
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_igor_annotation.pdf')
+dir.create(dirname(file_name), recursive = TRUE)
+
+ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
+
+plot_trend = ggplot(igor_tog_subset) +
+    geom_hex(aes(x = avg_mh, y = diff)) +
+    geom_abline(intercept = 0, slope = 0, color = 'black', linewidth = 1) +
+    geom_smooth(aes(x = avg_mh, y = diff), method = 'lm', se = TRUE, linewidth = 1) +
+    theme_cowplot(font_family = 'Arial') + 
+    xlab('Average MH within trimming/ligation annotations') +
+    ylab("Aggregated MH model probability - IGoR probability\n(IGoR annotation space)")+
+    background_grid(major = 'xy') + 
+    panel_border(color = 'gray60', size = 1.5) +
+    scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
+    theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
+
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_igor_annotation_ligMH.pdf')
+dir.create(dirname(file_name), recursive = TRUE)
+
+ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
+
+
+
+
