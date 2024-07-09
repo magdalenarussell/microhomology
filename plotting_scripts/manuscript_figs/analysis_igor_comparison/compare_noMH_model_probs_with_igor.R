@@ -23,7 +23,7 @@ NCPU <<- as.numeric(2)
 LEFT_NUC_MOTIF_COUNT <<- 1
 # 3' motif nucleotide count
 RIGHT_NUC_MOTIF_COUNT <<- 2
-MODEL_TYPE <<- 'motif_two-side-base-count-beyond_average-mh_ligation-mh'
+MODEL_TYPE <<- 'motif_two-side-base-count-beyond'
 L2 <<- 'True'
 
 source(paste0(MOD_PROJECT_PATH,'/scripts/data_compilation_functions.R'))
@@ -136,13 +136,13 @@ plot_trend = ggplot(mh_tog_subset) +
     geom_abline(intercept = 0, slope = 1, color = 'black', linewidth = 1) +
     theme_cowplot(font_family = 'Arial') + 
     ylab("Aggregated IGoR probability\n(MH annotation space)") +
-    xlab("MH model probability") +
+    xlab("noMH model probability") +
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 1.5) +
     scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_mh_annotation.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_mh_annotation_noMH_model.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
@@ -153,13 +153,13 @@ plot_trend = ggplot(mh_tog_subset) +
     geom_smooth(aes(x = ligation_mh, y = diff), method = 'lm', se = TRUE, linewidth = 1) +
     theme_cowplot(font_family = 'Arial') + 
     xlab('MH within trimming/ligation annotation') +
-    ylab("MH model probability - aggregated IGoR probability\n(MH annotation space)")+
+    ylab("noMH model probability - aggregated IGoR probability\n(MH annotation space)")+
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 1.5) +
     scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_mh_annotation_ligMH.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_mh_annotation_ligMH_noMH_model.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
@@ -172,13 +172,13 @@ plot_trend = ggplot(igor_tog_subset) +
     geom_abline(intercept = 0, slope = 1, color = 'black', linewidth = 1) +
     theme_cowplot(font_family = 'Arial') + 
     ylab("IGoR probability")+
-    xlab("Aggregated MH model probability\n(IGoR annotation space)") +
+    xlab("Aggregated noMH model probability\n(IGoR annotation space)") +
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 1.5) +
     scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_igor_annotation.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_igor_annotation_noMH_model.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
@@ -189,17 +189,13 @@ plot_trend = ggplot(igor_tog_subset) +
     geom_smooth(aes(x = avg_mh, y = diff), method = 'lm', se = TRUE, linewidth = 1) +
     theme_cowplot(font_family = 'Arial') + 
     xlab('Average MH within trimming/ligation annotations') +
-    ylab("Aggregated MH model probability - IGoR probability\n(IGoR annotation space)")+
+    ylab("Aggregated noMH model probability - IGoR probability\n(IGoR annotation space)")+
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 1.5) +
     scale_fill_gradient(low = '#efedf5', high = '#3f007d', trans = 'log10', name = expression(log[10]("count"))) +
     theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_igor_annotation_ligMH.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_igor_comparison/TRA_igor_comparison_igor_annotation_ligMH_noMH_model.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = plot_trend, width = 10, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
-
-
-
-

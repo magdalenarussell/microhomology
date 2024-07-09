@@ -125,27 +125,26 @@ mae_fold[, paste0('relative to null model') := get("motif_two-side-base-count-be
 cols2 = c('validation_productivity', 'long_loss_type', 'relative to motif + base-count model', 'relative to null model')
 mae_fold_long = mae_fold[, ..cols2] %>% pivot_longer(starts_with('relative'), names_to = 'fold_type', values_to = 'fold_mae_change') %>% as.data.table() 
 
-for (prod in c('nonproductive', 'productive')){
-    plot_loss = ggplot(tog_fold_long[validation_productivity == prod]) +
-             geom_point(aes(x = long_loss_type, y = fold_loss_change, color = fold_type), size = 6) +
-             geom_line(aes(x = long_loss_type, y = fold_loss_change, color = fold_type, group = fold_type), linewidth = 3) +
-             geom_hline(yintercept = 1, linetype = 'dashed', linewidth = 1, color = 'black') +
-             theme_cowplot(font_family = 'Arial') + 
-             xlab(' ') +
-             ylab('Fold change in\nexpected per-sequence log loss\n') +
-             background_grid(major = 'xy') + 
-             panel_border(color = 'gray60', size = 1.5) +
-             theme(text = element_text(size = 20), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 18), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))+
-             scale_color_brewer(palette = 'Dark2') +
-             labs(color = 'Fold change type')
+plot_loss = ggplot(tog_fold_long) +
+         facet_wrap(~validation_productivity, ncol = 1) +
+         geom_point(aes(x = long_loss_type, y = fold_loss_change, color = fold_type), size = 6) +
+         geom_line(aes(x = long_loss_type, y = fold_loss_change, color = fold_type, group = fold_type), linewidth = 3) +
+         geom_hline(yintercept = 1, linetype = 'dashed', linewidth = 1, color = 'black') +
+         theme_cowplot(font_family = 'Arial') + 
+         xlab(' ') +
+         ylab('Fold change in\nexpected per-sequence log loss\n') +
+         background_grid(major = 'xy') + 
+         panel_border(color = 'gray60', size = 1.5) +
+         theme(text = element_text(size = 20), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 18), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))+
+         scale_color_brewer(palette = 'Dark2') +
+         labs(color = 'Fold change type')
 
-    file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/trimMH_ligationMH_model/loss_fold_compare_', prod, '.pdf')
+file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/trimMH_ligationMH_model/loss_fold_compare.pdf')
 
-    ggsave(file_name, plot = plot_loss, width = 14, height = 7, units = 'in', dpi = 750, device = cairo_pdf)
-}
+ggsave(file_name, plot = plot_loss, width = 14, height = 14, units = 'in', dpi = 750, device = cairo_pdf)
 
-for (prod in c('nonproductive', 'productive')){
-    plot_mae = ggplot(mae_fold_long[validation_productivity == prod]) +
+plot_mae = ggplot(mae_fold_long) +
+             facet_wrap(~validation_productivity, ncol = 1) +
              geom_point(aes(x = long_loss_type, y = fold_mae_change, color = fold_type), size = 6) +
              geom_line(aes(x = long_loss_type, y = fold_mae_change, color = fold_type, group = fold_type), linewidth = 3) +
              geom_hline(yintercept = 0, linetype = 'dashed', linewidth = 1, color = 'black') +
@@ -158,7 +157,6 @@ for (prod in c('nonproductive', 'productive')){
              scale_color_brewer(palette = 'Dark2') +
              labs(color = 'Difference type')
 
-    file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/trimMH_ligationMH_model/mae_fold_compare_', prod, '.pdf')
+file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/trimMH_ligationMH_model/mae_fold_compare.pdf')
 
-    ggsave(file_name, plot = plot_mae, width = 14, height = 7, units = 'in', dpi = 750, device = cairo_pdf)
-}
+ggsave(file_name, plot = plot_mae, width = 14, height = 14, units = 'in', dpi = 750, device = cairo_pdf)
