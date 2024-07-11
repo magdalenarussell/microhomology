@@ -1,5 +1,6 @@
 LOCUS <<- 'gamma'
 DATA_TYPE <<- 'adaptive'
+CONVERT_FREQ <<- TRUE
 source(paste0(MOD_PROJECT_PATH, '/scripts/locus_specific_functions/', LOCUS, '.R'))
 source(paste0(MOD_PROJECT_PATH, '/scripts/data_type_functions/', DATA_TYPE, '.R'))
 

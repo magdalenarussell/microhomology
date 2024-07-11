@@ -970,8 +970,8 @@ class ConditionalLogisticRegressionPredictor(DataTransformer):
         predict(new_df): Uses the trained model to make predictions on new data.
         compute_loss(new_df): Computes the loss on new data using the model's loss function.
     """
-    def __init__(self, model, variable_colnames, count_colname, group_colname, repeat_obs_colname, choice_colname, params):
-        super().__init__(None, variable_colnames, count_colname, group_colname, repeat_obs_colname, choice_colname, params)
+    def __init__(self, model, variable_colnames, count_colname, group_colname, repeat_obs_colname, choice_colname, training_params, validation_params):
+        super().__init__(None, variable_colnames, count_colname, group_colname, repeat_obs_colname, choice_colname, validation_params)
         self.model = model
         if not isinstance(model, ConditionalLogisticRegressor):
             raise TypeError("'model' must be a ConditionalLogisticRegressor object")
@@ -1063,13 +1063,15 @@ class ConditionalLogisticRegressionEvaluator(DataTransformer):
         expected_log_loss (float): Expected log loss calculated through cross-validation on the training data.
         validation_df (pd.DataFrame): DataFrame containing the validation data.
     """
-    def __init__(self, model_path, params, training_df = None, validation_df = None):
+    def __init__(self, model_path, training_params, validation_params, training_df = None, validation_df = None):
         self.model = self.load_model(model_path)
+        self.training_params = training_params
+        self.validation_params = validation_params
         self.model.training_df = training_df
         self.validation_df = validation_df
         if not isinstance(self.model, ConditionalLogisticRegressor):
             raise TypeError("'model' must be a ConditionalLogisticRegressor object")
-        super().__init__(self.model.training_df, self.model.input_variable_colnames, self.model.count_colname, self.model.input_group_colname, self.model.repeat_obs_colname, self.model.input_choice_colname, params)
+        super().__init__(self.model.training_df, self.model.input_variable_colnames, self.model.count_colname, self.model.input_group_colname, self.model.repeat_obs_colname, self.model.input_choice_colname, validation_params)
         self.log_loss = None
         self.expected_log_loss = None
 
@@ -1149,7 +1151,7 @@ class ConditionalLogisticRegressionEvaluator(DataTransformer):
                                   mask_matrix)
         return(loss)
 
-    def compile_evaluation_results_df(self, training_annotation, training_productivity, calculate_validation_loss = False, calculate_expected_loss=False):
+    def compile_evaluation_results_df(self, calculate_validation_loss = False, calculate_expected_loss=False):
         """
         Compiles the model evaluation results, including log loss on training data, expected log loss through
         cross-validation, and log loss on validation data, into a DataFrame.
@@ -1163,16 +1165,16 @@ class ConditionalLogisticRegressionEvaluator(DataTransformer):
         Returns:
             pd.DataFrame: A DataFrame containing the compiled evaluation results and model parameters.
         """
-        result = {'training_annotation_type': training_annotation,
-                  'productivity':training_productivity,
-                  'motif_length_5_end':[self.params.left_nuc_motif_count],
-                  'motif_length_3_end':[self.params.right_nuc_motif_count],
-                  'motif_type':[self.params.motif_type],
-                  'gene_weight_type':[self.params.gene_weight_type],
-                  'upper_bound':[self.params.upper_trim_bound],
-                  'lower_bound':[self.params.lower_trim_bound],
-                  'insertion_bound':[self.params.insertions],
-                  'model_type':[self.params.model_type],
+        result = {'training_annotation_type': [self.training_params.annotation_type],
+                  'productivity':[self.training_params.productivity],
+                  'motif_length_5_end':[self.training_params.left_nuc_motif_count],
+                  'motif_length_3_end':[self.training_params.right_nuc_motif_count],
+                  'motif_type':[self.training_params.motif_type],
+                  'gene_weight_type':[self.training_params.gene_weight_type],
+                  'upper_bound':[self.training_params.upper_trim_bound],
+                  'lower_bound':[self.training_params.lower_trim_bound],
+                  'insertion_bound':[self.training_params.insertions],
+                  'model_type':[self.training_params.model_type],
                   'base_count_5end_length':[10],
                   'model_parameter_count':[len(self.model.coefs)]}
 
@@ -1187,8 +1189,8 @@ class ConditionalLogisticRegressionEvaluator(DataTransformer):
             e = results_df.copy()
             e['loss_type'] = 'Expected log loss across training data'
             e['log_loss'] = self.expected_log_loss
-            e['validation_annotation_type'] = [self.params.annotation_type]
-            e['validation_productivity'] = [self.params.productivity]
+            e['validation_annotation_type'] = [self.validation_params.annotation_type]
+            e['validation_productivity'] = [self.validation_params.productivity]
 
             final = pd.concat([final, e], axis = 0)
 
@@ -1197,8 +1199,8 @@ class ConditionalLogisticRegressionEvaluator(DataTransformer):
             val = results_df.copy()
             val['loss type'] = 'Log loss on validation data'
             val['log_loss'] = val_loss
-            val['validation_annotation_type'] = [self.params.annotation_type]
-            val['validation_productivity'] = [self.params.productivity]
+            val['validation_annotation_type'] = [self.validation_params.annotation_type]
+            val['validation_productivity'] = [self.validation_params.productivity]
 
             final = pd.concat([final, val], axis = 0)
 

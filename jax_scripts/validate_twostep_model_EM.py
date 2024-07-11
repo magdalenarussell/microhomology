@@ -71,13 +71,12 @@ else:
 # validate model
 model_filename = trained_params.model_output_path(L2)
 evaluator = TwoStepConditionalLogisticRegressionEvaluatorEM(model_filename,
-                                                   val_params,
-                                                   training_df=train_df,
-                                                   validation_df=processed_data)
+                                                            training_params = trained_params,
+                                                            validation_params = val_params,
+                                                            training_df=train_df,
+                                                            validation_df=processed_data)
 
-result = evaluator.compile_evaluation_results_df(ANNOTATION_TYPE,
-                                                 trained_params.productivity,
-                                                 True)
+result = evaluator.compile_evaluation_results_df(True)
 
 result['validation_data_type'] = ANNOTATION_TYPE_VALIDATION
 
@@ -104,7 +103,8 @@ if ANNOTATION_TYPE_VALIDATION != ANNOTATION_TYPE:
                                                        repeat_obs_colname = model_params.repeat_obs_colname,
                                                        choice_colname = model_params.choice_colname,
                                                        choice2_colname = model_params.choice2_colname,
-                                                       params = trained_params)
+                                                       training_params = trained_params,
+                                                       validation_params = val_params)
 
     # write predictions and coefficients
     training_pred = predictor.predict(new_df=processed_data)
