@@ -484,8 +484,8 @@ class TwoStepConditionalLogisticRegressorEM(TwoStepDataTransformerEM, TwoStepCon
 
 
 class TwoStepConditionalLogisticRegressionPredictorEM(TwoStepDataTransformerEM):
-    def __init__(self, model, variable_colnames, choice1_variable_colnames, choice2_variable_colnames, count_colname, group_colname, repeat_obs_colname, choice_colname, choice2_colname, params):
-        super().__init__(training_df=None, variable_colnames=variable_colnames, choice1_variable_colnames=choice1_variable_colnames, choice2_variable_colnames=choice2_variable_colnames, count_colname=count_colname, group_colname=group_colname, repeat_obs_colname=repeat_obs_colname, choice_colname=choice_colname, choice2_colname=choice2_colname, params=params)
+    def __init__(self, model, variable_colnames, choice1_variable_colnames, choice2_variable_colnames, count_colname, group_colname, repeat_obs_colname, choice_colname, choice2_colname, training_params, validation_params):
+        super().__init__(training_df=None, variable_colnames=variable_colnames, choice1_variable_colnames=choice1_variable_colnames, choice2_variable_colnames=choice2_variable_colnames, count_colname=count_colname, group_colname=group_colname, repeat_obs_colname=repeat_obs_colname, choice_colname=choice_colname, choice2_colname=choice2_colname, params=validation_params)
         self.original_choice1_variable_colnames = choice1_variable_colnames
         self.original_choice2_variable_colnames = choice2_variable_colnames
         self.original_choice2_colname = choice2_colname
@@ -606,13 +606,15 @@ class TwoStepConditionalLogisticRegressionEvaluatorEM(TwoStepDataTransformerEM):
         calculate_validation_log_loss: Calculates log loss on the validation dataset.
         compile_evaluation_results_df: Compiles evaluation results into a DataFrame.
     """
-    def __init__(self, model_path, params, training_df = None, validation_df = None):
+    def __init__(self, model_path, training_params, validation_params, training_df = None, validation_df = None):
         self.model = self.load_model(model_path)
+        self.training_params = training_params
+        self.validation_params = validation_params
         self.model.training_df = training_df
         self.validation_df = validation_df
         if not isinstance(self.model, TwoStepConditionalLogisticRegressorEM):
             raise TypeError("'model' must be a TwoStepConditionalLogisticRegressorEM object")
-        super().__init__(self.model.training_df, self.model.input_variable_colnames, self.model.input_choice1_variable_colnames, self.model.input_choice2_variable_colnames, self.model.count_colname, self.model.input_group_colname, self.model.repeat_obs_colname, self.model.input_choice_colname, self.model.input_choice2_colname, params)
+        super().__init__(self.model.training_df, self.model.input_variable_colnames, self.model.input_choice1_variable_colnames, self.model.input_choice2_variable_colnames, self.model.count_colname, self.model.input_group_colname, self.model.repeat_obs_colname, self.model.input_choice_colname, self.model.input_choice2_colname, validation_params)
         self.log_loss = None
         self.expected_log_loss = None
 
@@ -679,7 +681,7 @@ class TwoStepConditionalLogisticRegressionEvaluatorEM(TwoStepDataTransformerEM):
                                   prod_mask_matrix)
         return(loss)
 
-    def compile_evaluation_results_df(self, training_annotation, training_productivity, calculate_validation_loss = False):
+    def compile_evaluation_results_df(self, calculate_validation_loss = False):
         """
         Compiles the evaluation results, including training log loss, expected log loss, and validation log loss, into a DataFrame for easy comparison and analysis.
 
@@ -689,16 +691,16 @@ class TwoStepConditionalLogisticRegressionEvaluatorEM(TwoStepDataTransformerEM):
         Returns:
             pd.DataFrame: A DataFrame containing the compiled evaluation results and the model parameters used during training and evaluation.
         """
-        result = {'training_annotation_type':training_annotation,
-                  'productivity':training_productivity,
-                  'motif_length_5_end':[self.params.left_nuc_motif_count],
-                  'motif_length_3_end':[self.params.right_nuc_motif_count],
-                  'motif_type':[self.params.motif_type],
-                  'gene_weight_type':[self.params.gene_weight_type],
-                  'upper_bound':[self.params.upper_trim_bound],
-                  'lower_bound':[self.params.lower_trim_bound],
-                  'insertion_bound':[self.params.insertions],
-                  'model_type':[self.params.model_type],
+        result = {'training_annotation_type':[self.training_params.annotation_type],
+                  'productivity':[self.training_params.productivity],
+                  'motif_length_5_end':[self.training_params.left_nuc_motif_count],
+                  'motif_length_3_end':[self.training_params.right_nuc_motif_count],
+                  'motif_type':[self.training_params.motif_type],
+                  'gene_weight_type':[self.training_params.gene_weight_type],
+                  'upper_bound':[self.training_params.upper_trim_bound],
+                  'lower_bound':[self.training_params.lower_trim_bound],
+                  'insertion_bound':[self.training_params.insertions],
+                  'model_type':[self.training_params.model_type],
                   'base_count_5end_length':[10],
                   'model_parameter_count':[len(self.model.coefs)]}
 
@@ -711,8 +713,8 @@ class TwoStepConditionalLogisticRegressionEvaluatorEM(TwoStepDataTransformerEM):
             val = results_df.copy()
             val['loss type'] = 'Log loss on validation data'
             val['log_loss'] = val_loss
-            val['validation_annotation_type'] = [self.params.annotation_type]
-            val['validation_productivity'] = [self.params.productivity]
+            val['validation_annotation_type'] = [self.validation_params.annotation_type]
+            val['validation_productivity'] = [self.validation_params.productivity]
 
             final = pd.concat([final, val], axis = 0)
 

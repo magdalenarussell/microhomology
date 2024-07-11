@@ -50,14 +50,17 @@ for (m in names(model_types)){
     LEFT_NUC_MOTIF_COUNT <<- model_types[[m]][1]
     RIGHT_NUC_MOTIF_COUNT <<- model_types[[m]][2]
     MODEL_TYPE <<- m
-    for (annot in c('igor_alpha', 'validation_adaptive_alpha', 'validation_igor_alpha')){
+    for (annot in c('igor_alpha', 'validation_igor_alpha', 'validation_adaptive_gamma')){
         if (annot == 'igor_alpha'){
             # load predictions
             path = get_model_predictions_file_path(L2=L2, model_type = m) 
         } else {
             path = get_validation_predictions_file_path(L2=L2, validation_annotation=annot, model_type = m)
         }
-        temp = fread(path)[new_type != '0']
+        temp = fread(path)
+        if ('new_type' %in% colnames(temp)) {
+            temp = temp[new_type != '0']
+        }
         cols = c('v_gene', 'j_gene', 'v_trim', 'j_trim', 'ligation_mh', 'index', 'predicted_prob')
         temp = temp[, ..cols]
         for (prod in c('nonproductive_v-j_trim_ligation-mh', 'productive_v-j_trim_ligation-mh')) {
@@ -81,7 +84,7 @@ for (m in names(model_types)){
 }
 
 # reassign loss types
-loss_types = list('igor_alpha' = 'TRA training\ndataset\n(IGoR)', 'validation_igor_alpha' = 'TRA testing\ndataset\n(IGoR)', 'validation_adaptive_alpha' = 'TRA testing\ndataset\n(Adaptive)')
+loss_types = list('igor_alpha' = 'TRA training\ndataset\n(IGoR)', 'validation_igor_alpha' = 'TRA testing\ndataset\n(IGoR)', 'validation_adaptive_gamma' = 'TRG testing\ndataset\n(Adaptive)')
 eval_results$long_loss_type = mapvalues(eval_results$validation_data_type, from = names(loss_types), to = loss_types)
 predictions$long_loss_type = mapvalues(predictions$validation_annotation_type, from = names(loss_types), to = loss_types)
 
@@ -89,14 +92,17 @@ predictions$long_loss_type = mapvalues(predictions$validation_annotation_type, f
 eval_results$long_loss_type = factor(eval_results$long_loss_type, levels = loss_types)
 predictions$long_loss_type = factor(predictions$long_loss_type, levels = loss_types)
 
+eval_results = eval_results[validation_data_type %in% names(loss_types)]
+predictions = predictions[validation_annotation_type %in% names(loss_types)]
+
 # calculate fold change in loss
 cols = c('validation_productivity', 'long_loss_type', 'log_loss', 'model_type')
 tog_fold = eval_results[, ..cols] %>% pivot_wider(names_from = 'model_type', values_from = 'log_loss') %>% as.data.table()
-tog_fold[, paste0('relative to motif + base-count model') := get("motif_two-side-base-count-beyond_average-mh_ligation-mh")/get("motif_two-side-base-count-beyond")]
-tog_fold[, paste0('relative to null model') := get("motif_two-side-base-count-beyond_average-mh_ligation-mh")/get("null")]
+tog_fold[, paste0('MH model relative to\nmodel without MH terms\n') := get("motif_two-side-base-count-beyond_average-mh_ligation-mh")/get("motif_two-side-base-count-beyond")]
+tog_fold[, paste0('MH model relative to\nnull model') := get("motif_two-side-base-count-beyond_average-mh_ligation-mh")/get("null")]
 
-cols2 = c('validation_productivity', 'long_loss_type', 'relative to motif + base-count model', 'relative to null model')
-tog_fold_long = tog_fold[, ..cols2] %>% pivot_longer(starts_with('relative'), names_to = 'fold_type', values_to = 'fold_loss_change') %>% as.data.table() 
+cols2 = c('validation_productivity', 'long_loss_type', 'MH model relative to\nmodel without MH terms\n', 'MH model relative to\nnull model')
+tog_fold_long = tog_fold[, ..cols2] %>% pivot_longer(starts_with('MH model'), names_to = 'fold_type', values_to = 'fold_loss_change') %>% as.data.table() 
 
 # calculate MAE
 pred_subset = predictions[!(is.na(count)) & !(is.na(weighted_observation))]
@@ -119,11 +125,11 @@ mae = mae_per[, mean(V1), by = .(validation_productivity, long_loss_type, model_
 ## get fold MAE
 cols = c('validation_productivity', 'long_loss_type', 'V1', 'model_type')
 mae_fold = mae[, ..cols] %>% pivot_wider(names_from = 'model_type', values_from = 'V1') %>% as.data.table()
-mae_fold[, paste0('relative to motif + base-count model') := get("motif_two-side-base-count-beyond_average-mh_ligation-mh")-get("motif_two-side-base-count-beyond")]
-mae_fold[, paste0('relative to null model') := get("motif_two-side-base-count-beyond_average-mh_ligation-mh")-get("null")]
+mae_fold[, paste0('MH model relative to\nmodel without MH terms\n') := get("motif_two-side-base-count-beyond_average-mh_ligation-mh")-get("motif_two-side-base-count-beyond")]
+mae_fold[, paste0('MH model relative to\nnull model') := get("motif_two-side-base-count-beyond_average-mh_ligation-mh")-get("null")]
 
-cols2 = c('validation_productivity', 'long_loss_type', 'relative to motif + base-count model', 'relative to null model')
-mae_fold_long = mae_fold[, ..cols2] %>% pivot_longer(starts_with('relative'), names_to = 'fold_type', values_to = 'fold_mae_change') %>% as.data.table() 
+cols2 = c('validation_productivity', 'long_loss_type', 'MH model relative to\nmodel without MH terms\n', 'MH model relative to\nnull model')
+mae_fold_long = mae_fold[, ..cols2] %>% pivot_longer(starts_with('MH model'), names_to = 'fold_type', values_to = 'fold_mae_change') %>% as.data.table() 
 
 plot_loss = ggplot(tog_fold_long) +
          facet_wrap(~validation_productivity, ncol = 1) +
@@ -137,11 +143,11 @@ plot_loss = ggplot(tog_fold_long) +
          panel_border(color = 'gray60', size = 1.5) +
          theme(text = element_text(size = 20), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 18), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))+
          scale_color_brewer(palette = 'Dark2') +
-         labs(color = 'Fold change type')
+         labs(color = '')
 
 file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/trimMH_ligationMH_model/loss_fold_compare.pdf')
 
-ggsave(file_name, plot = plot_loss, width = 14, height = 14, units = 'in', dpi = 750, device = cairo_pdf)
+ggsave(file_name, plot = plot_loss, width = 12, height = 12, units = 'in', dpi = 750, device = cairo_pdf)
 
 plot_mae = ggplot(mae_fold_long) +
              facet_wrap(~validation_productivity, ncol = 1) +
@@ -155,8 +161,8 @@ plot_mae = ggplot(mae_fold_long) +
              panel_border(color = 'gray60', size = 1.5) +
              theme(text = element_text(size = 20), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 18), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))+
              scale_color_brewer(palette = 'Dark2') +
-             labs(color = 'Difference type')
+             labs(color = '')
 
 file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/trimMH_ligationMH_model/mae_fold_compare.pdf')
 
-ggsave(file_name, plot = plot_mae, width = 14, height = 14, units = 'in', dpi = 750, device = cairo_pdf)
+ggsave(file_name, plot = plot_mae, width = 12, height = 12, units = 'in', dpi = 750, device = cairo_pdf)

@@ -192,7 +192,7 @@ reformat_data <- function(data){
     stopifnot(LOCUS %in% c('alpha', 'gamma'))
     data = convert_adaptive_style_to_imgt(data) 
     data = get_possible_pnucs(data)
-    data = convert_frequency_to_count(data, convert = FALSE)
+    data = convert_frequency_to_count(data, convert = CONVERT_FREQ)
     setnames(data, 'sample_name', 'subject')
     setnames(data, 'templates', 'count')
     setnames(data, 'd0_trim', 'd5_trim', skip_absent = TRUE)
