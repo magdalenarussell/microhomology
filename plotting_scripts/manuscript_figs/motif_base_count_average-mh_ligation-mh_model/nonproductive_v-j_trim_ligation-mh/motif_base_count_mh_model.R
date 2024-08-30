@@ -33,11 +33,13 @@ ANNOTATION_TYPE <<- 'igor_alpha'
 source(paste0(MOD_PROJECT_PATH, '/config/file_paths.R'))
 source(paste0(MOD_PROJECT_PATH,'/plotting_scripts/plotting_functions.R'))
 
+file_root = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/motif_base_count_average-mh_ligation-mh_model/', PARAM_GROUP)
+
 # Read in model coefficient data 
 coef_path = get_model_coef_file_path(L2)
 coefs = fread(coef_path)
 
-fwrite(coefs, paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/motif_base_count_average-mh_ligation-mh_model/', PARAM_GROUP, '/coefs.tsv'), sep = '\t')
+fwrite(coefs, paste0(file_root, '/coefs.tsv'), sep = '\t')
 
 v_motif_heatmap = plot_motif_coefficient_heatmap_single_group(coefs[trim_type == 'v_trim'], with_values = FALSE, limits = c(-0.450, 0.450)) + ggtitle('   V-trimming coefficients')
 j_motif_heatmap = plot_motif_coefficient_heatmap_single_group(coefs[trim_type == 'j_trim'], with_values = FALSE, limits = c(-0.450, 0.450)) + ggtitle('   J-trimming coefficients')
