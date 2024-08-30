@@ -32,15 +32,15 @@ get_bootstrap_model_coef_file_path <- function(iteration, L2, model_type=NULL, s
     return(file_name)
 }
 
-get_model_predictions_file_path <- function(L2, model_type=NULL, sample_annotation=SAMPLE_ANNOT){
+get_model_predictions_file_path <- function(L2, pred_type, model_type=NULL, sample_annotation=SAMPLE_ANNOT){
     if (is.null(model_type)){
         model_type = MODEL_TYPE
     }
     path = python_output_path(model_type)
     if (sample_annotation==TRUE){
-        file_name = paste0(path, '/predicted_dist_data_L2', L2, '.tsv')
+        file_name = paste0(path, '/', pred_type, '/predicted_dist_data_L2', L2, '.tsv')
     } else {
-        file_name = paste0(path, '/predicted_dist_data_all_annotations_L2', L2, '.tsv')
+        file_name = paste0(path, '/', pred_type, '/predicted_dist_data_all_annotations_L2', L2, '.tsv')
     }
     return(file_name)
 }
