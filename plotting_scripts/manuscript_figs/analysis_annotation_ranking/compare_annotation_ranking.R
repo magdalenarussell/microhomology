@@ -49,6 +49,30 @@ tog[, no_model_prob_sum := sum(predicted_prob.y), by = index]
 tog[, mh_annot_prob := predicted_prob.x/mh_model_prob_sum]
 tog[, no_annot_prob := predicted_prob.y/no_model_prob_sum]
 
+# show how probabilities differ as you increase MH
+tog[, prob_diff := predicted_prob.x - predicted_prob.y]
+
+reg_result = lm(prob_diff ~ ligation_mh, data = tog)
+
+diffs = ggplot(tog) +
+    geom_bin_2d(aes(x = as.factor(ligation_mh), y = prob_diff), binwidth = c(1, 0.005))+
+    theme_cowplot(font_family = 'Arial') + 
+    xlab('Number of MH nucleotides within\ntrimming and ligation configuration') +
+    ylab('Difference in joint trimming and ligation probabilities\n(model with MH - model without MH)')+
+    geom_abline(slope = 0, intercept = 0, color = 'black', linewidth = 0.5)+
+    geom_smooth(method = 'lm', aes(x = ligation_mh, y = prob_diff), size = 0.5) +
+    background_grid(major = 'xy') + 
+    panel_border(color = 'gray60', size = 0.5) +
+    scale_fill_gradient(low = '#fbefe5', high = '#d95f02', trans = 'log10', name = "count") +
+    theme(text = element_text(size = 8), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 6), plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm"), legend.position = 'bottom', legend.justification="center", legend.key.height = unit(0.3, "cm"), panel.grid.major = element_line(size = 0.25)) 
+
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_annotation_ranking/scatter_prob_diff.pdf')
+dir.create(dirname(file_name), recursive = TRUE)
+
+ggsave(file_name, plot = diffs, width = 8.8, height = 9.5, units = 'cm', dpi = 750, device = cairo_pdf, limitsize=FALSE)
+
+
+
 # get annotation ranking
 tog[, mh_annot_rank := rank(-mh_annot_prob), by = index]
 tog[, no_annot_rank := rank(-no_annot_prob), by = index]
@@ -63,82 +87,67 @@ first_rank_subset[mh_annot_rank != no_annot_rank, same_top_rank := FALSE]
 # get MH
 first_rank_subset[, avg_pair_mh := mean(ligation_mh), by = .(v_gene, j_gene)]
 first_rank_subset[, avg_index_mh := mean(ligation_mh), by = .(v_gene, j_gene, index)]
+index_mh_avg = tog[, mean(ligation_mh), by = .(v_gene, j_gene, index)][, mean(V1), by = .(v_gene, j_gene)]
+setnames(index_mh_avg, 'V1', 'avg_index_mh_by_pair')
+first_rank_subset = merge(first_rank_subset, index_mh_avg, by = c('v_gene', 'j_gene'))
+
+
+# show distribution of top-ranked annotation probability differences
+no_cols = c('index', 'no_annot_prob', 'no_annot_rank', 'same_top_rank', 'avg_index_mh')
+no_mh_first_rank = unique(first_rank_subset[, ..no_cols])[no_annot_rank == 1]
+
+mh_cols = c('index', 'mh_annot_prob', 'mh_annot_rank', 'same_top_rank', 'avg_index_mh')
+mh_first_rank = unique(first_rank_subset[, ..mh_cols])[mh_annot_rank == 1]
+
+rank_tog = merge(mh_first_rank, no_mh_first_rank, by = c('index', 'avg_index_mh', 'same_top_rank'))
+rank_tog[, annot_diff := abs(mh_annot_prob - no_annot_prob)]
+
+raw_prop = rank_tog[, .N, by = same_top_rank]
+raw_prop[, prop:= N/sum(N)]
 
 # get per gene prop
-changed_simple = first_rank_subset[, .N, by = .(index, v_gene, j_gene, same_top_rank, avg_pair_mh)]
-s2 = changed_simple[, .N, by = .(v_gene, j_gene, same_top_rank, avg_pair_mh)]
+changed_simple = first_rank_subset[, .N, by = .(index, v_gene, j_gene, same_top_rank, avg_index_mh_by_pair, avg_pair_mh)]
+s2 = changed_simple[, .N, by = .(v_gene, j_gene, same_top_rank, avg_index_mh_by_pair, avg_pair_mh)]
 s2[, prop:= N/sum(N), by = .(v_gene, j_gene)]
 s2$indicator = 1
 
-# plot side by side
-s2$model = "MH model versus\nmodel without MH terms"
+# compare MH to number of changes
+regression_result = lm(prop ~ avg_index_mh_by_pair, data = s2[same_top_rank == FALSE])
 
-plot = ggplot(s2[same_top_rank == FALSE])+
-    geom_boxplot(aes(x = model, y = prop, fill = model))+
+annot_changes = ggplot(s2[same_top_rank == FALSE])+
+    geom_hex(aes(x = avg_index_mh_by_pair, y = prop))+
+    geom_smooth(method = 'lm', aes(x = avg_index_mh_by_pair, y = prop), size = 0.5) +
     theme_cowplot(font_family = 'Arial') + 
-    xlab('') +
-    ylab('Proportion of sequences with different\ntop ranked MH annotation (per gene pair)\n') +
+    ylab('Proportion of sequences per gene pair\nwith a different top-ranked annotations\n(model with MH vs model without MH)') +
+    xlab('Average MH across sequence annotation\nscenarios per gene pair') +
     background_grid(major = 'xy') + 
-    scale_fill_brewer(palette = 'Dark2') +
-    panel_border(color = 'gray60', size = 1.5) +
-    theme(text = element_text(size = 14), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"), legend.position = 'none') 
+    panel_border(color = 'gray60', size = 0.5) +
+    scale_fill_gradient(low = '#e8f5f1', high = '#1b9e77', name = 'count')+
+    theme(text = element_text(size = 8), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 6), plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm"), legend.position = 'bottom', legend.justification="center", legend.key.height = unit(0.3, "cm"), panel.grid.major = element_line(size = 0.25)) 
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_annotation_ranking/boxplot_MH_noMH.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_annotation_ranking/per_gene_annot_changes_by_mh.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
-ggsave(file_name, plot = plot, width = 5, height = 7, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
+ggsave(file_name, plot = annot_changes, width = 8.8, height = 9.5, units = 'cm', dpi = 750, device = cairo_pdf, limitsize=FALSE)
 
+# explore the meaningfulness of the annotation probability differences
 first_diffs = first_rank_subset[, .(abs(diff(no_annot_prob)), abs(diff(mh_annot_prob))), by = .(index, same_top_rank, avg_index_mh)]
 setnames(first_diffs, 'V1', 'abs_diff_no_annot_prob')
 setnames(first_diffs, 'V2', 'abs_diff_mh_annot_prob')
 
-
-scatter = ggplot(first_diffs) +
-    geom_hex(aes(x = abs_diff_mh_annot_prob, y = abs_diff_no_annot_prob))+
+meaning = ggplot(first_diffs) +
+    geom_hex(aes(x = abs_diff_mh_annot_prob, y = abs_diff_no_annot_prob)) +
     theme_cowplot(font_family = 'Arial') + 
-    xlab('Absolute difference in MH model probabilities\n(between top MH model annotation and top no-MH model annotation)') +
-    ylab('Absolute difference in no-MH model probabilities\n(between top MH model annotation and top no-MH model annotation)') +
-    background_grid(major = 'xy') + 
-    panel_border(color = 'gray60', size = 1.5) +
-    scale_fill_gradient(low = '#fbefe5', high = '#d95f02', trans = 'log10', name = expression(log[10]("count"))) +
-    theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
+    xlim(c(0, 0.825)) +
+    ylim(c(0, 0.825)) +
+    xlab('Absolute difference in MH model probabilities\n(for top MH vs top no-MH annotations)')+
+    ylab('Absolute difference in no-MH model probabilities\n(for top MH vs top no-MH annotations)')+
+    panel_border(color = 'gray60', size = 0.5) +
+    background_grid(major = 'xy') +
+    scale_fill_gradient(low = '#f1f0f7', high = '#7570b3', trans = 'log10', name = "count", na.value = 'white')+
+    theme(text = element_text(size = 8), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 6), plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm"), legend.position = 'bottom', legend.justification="center", legend.key.height = unit(0.3, "cm"),panel.grid.major = element_line(size = 0.25))
 
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_annotation_ranking/scatter_MH_noMH.pdf')
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_annotation_ranking/change_magnitude_heatmap.pdf')
 dir.create(dirname(file_name), recursive = TRUE)
 
-ggsave(file_name, plot = scatter, width = 12, height = 10, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
-
-# compare MH to number of changes
-scatter2 = ggplot(s2[same_top_rank == FALSE])+
-    geom_hex(aes(x = avg_pair_mh, y = prop))+
-    geom_smooth(method = 'lm', aes(x = avg_pair_mh, y = prop)) +
-    theme_cowplot(font_family = 'Arial') + 
-    ylab('Proportion of sequences with different\ntop ranked MH annotation (per gene pair)\n') +
-    xlab('Average MH within gene pair trimming/ligation configurations') +
-    background_grid(major = 'xy') + 
-    panel_border(color = 'gray60', size = 1.5) +
-    scale_fill_gradient(low = '#fbefe5', high = '#d95f02', name = 'count')+
-    theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
-
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_annotation_ranking/scatter_MH_noMH_avgMH_effect.pdf')
-dir.create(dirname(file_name), recursive = TRUE)
-
-ggsave(file_name, plot = scatter2, width = 12, height = 10, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
-
-
-# compare MH to meaningfulness of changes
-scatter = ggplot(first_diffs) +
-    geom_hex(aes(x = avg_index_mh, y = abs_diff_mh_annot_prob))+
-    geom_smooth(method = 'lm', aes(x = avg_index_mh, y = abs_diff_mh_annot_prob)) +
-    xlab('Average MH across sequence annotations') +
-    theme_cowplot(font_family = 'Arial') + 
-    ylab('Absolute difference in MH model probabilities\n(between top MH model annotation and top no-MH model annotation)') +
-    background_grid(major = 'xy') + 
-    panel_border(color = 'gray60', size = 1.5) +
-    scale_fill_gradient(low = '#fbefe5', high = '#d95f02', trans = 'log10', name = expression(log[10]("count"))) +
-    theme(text = element_text(size = 18), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 14), plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm")) 
-
-file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_annotation_ranking/scatter_MH_noMH_avgMH_index_effect.pdf')
-dir.create(dirname(file_name), recursive = TRUE)
-
-ggsave(file_name, plot = scatter, width = 12, height = 10, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
+ggsave(file_name, plot = meaning, width = 8.8, height = 9.5, units = 'cm', dpi = 750, device = cairo_pdf, limitsize=FALSE)
