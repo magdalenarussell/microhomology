@@ -23,10 +23,13 @@ LEFT_NUC_MOTIF_COUNT <<- as.numeric(args[3])
 # 3' motif nucleotide count
 RIGHT_NUC_MOTIF_COUNT <<- as.numeric(args[4])
 MODEL_TYPE <<- args[5]
-MODEL_TYPE2 <<- args[6]
-L2 <<- args[7]
-ANNOTATION_TYPE <<- args[8]
-DF <<- as.numeric(args[9])
+LEFT_NUC_MOTIF_COUNT2 <<- as.numeric(args[6])
+# 3' motif nucleotide count
+RIGHT_NUC_MOTIF_COUNT2 <<- as.numeric(args[7])
+MODEL_TYPE2 <<- args[8]
+L2 <<- args[9]
+ANNOTATION_TYPE <<- args[10]
+DF <<- as.numeric(args[11])
 
 source(paste0(MOD_PROJECT_PATH,'/scripts/data_compilation_functions.R'))
 
@@ -34,14 +37,16 @@ source(paste0(MOD_PROJECT_PATH,'/scripts/data_compilation_functions.R'))
 filename = processed_data_path(sample_annotation = SAMPLE_ANNOT)
 full_data = fread(filename)
 
-full_pred_path = get_model_predictions_file_path(L2)
+full_pred_path = get_model_predictions_file_path(L2, pred_type = 'training')
 
 full_pred = fread(full_pred_path)
 if ('new_type' %in% colnames(full_pred)){
     full_pred = full_pred[new_type != '0']
 }
 
-sub_pred_path = get_model_predictions_file_path(L2, model_type=MODEL_TYPE2)
+LEFT_NUC_MOTIF_COUNT <<- LEFT_NUC_MOTIF_COUNT2
+RIGHT_NUC_MOTIF_COUNT <<- RIGHT_NUC_MOTIF_COUNT2
+sub_pred_path = get_model_predictions_file_path(L2, model_type=MODEL_TYPE2, pred_type = 'training')
 sub_pred = fread(sub_pred_path)
 if ('new_type' %in% colnames(sub_pred)){
     sub_pred = sub_pred[new_type != '0']
