@@ -60,7 +60,7 @@ diffs = ggplot(tog) +
     xlab('Number of MH nucleotides within\ntrimming and ligation configuration') +
     ylab('Difference in joint trimming and ligation probabilities\n(model with MH - model without MH)')+
     geom_abline(slope = 0, intercept = 0, color = 'black', linewidth = 0.5)+
-    geom_smooth(method = 'lm', aes(x = ligation_mh, y = prob_diff), size = 0.5) +
+    # geom_smooth(method = 'lm', aes(x = ligation_mh, y = prob_diff), size = 0.5) +
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 0.5) +
     scale_fill_gradient(low = '#fbefe5', high = '#d95f02', trans = 'log10', name = "count") +
@@ -113,13 +113,14 @@ s2$indicator = 1
 
 # compare MH to number of changes
 regression_result = lm(prop ~ avg_index_mh_by_pair, data = s2[same_top_rank == FALSE])
+cor.test( s2[same_top_rank == FALSE]$prop,  s2[same_top_rank == FALSE]$avg_index_mh_by_pair, method = "pearson")
 
 annot_changes = ggplot(s2[same_top_rank == FALSE])+
-    geom_hex(aes(x = avg_index_mh_by_pair, y = prop))+
-    geom_smooth(method = 'lm', aes(x = avg_index_mh_by_pair, y = prop), size = 0.5) +
+    geom_hex(aes(y = avg_index_mh_by_pair, x = prop))+
+    # geom_smooth(method = 'lm', aes(x = avg_index_mh_by_pair, y = prop), size = 0.5) +
     theme_cowplot(font_family = 'Arial') + 
-    ylab('Proportion of sequences per gene pair\nwith a different top-ranked annotations\n(model with MH vs model without MH)') +
-    xlab('Average MH across sequence annotation\nscenarios per gene pair') +
+    xlab('Proportion of sequences per gene pair\nwith a different top-ranked annotations\n(model with MH vs model without MH)') +
+    ylab('Average MH across sequence annotation\nscenarios per gene pair') +
     background_grid(major = 'xy') + 
     panel_border(color = 'gray60', size = 0.5) +
     scale_fill_gradient(low = '#e8f5f1', high = '#1b9e77', name = 'count')+
@@ -129,6 +130,20 @@ file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = annot_changes, width = 8.8, height = 9.5, units = 'cm', dpi = 750, device = cairo_pdf, limitsize=FALSE)
+
+annot_change_density = ggplot(s2[same_top_rank == FALSE])+
+    geom_density(aes(x = prop, y = after_stat(count)), fill = '#1b9e77', alpha = 0.8, linewidth = 0.25) +
+    theme_cowplot(font_family = 'Arial') + 
+    xlab('Proportion of sequences per gene pair\nwith a different top-ranked annotations\n(model with MH vs model without MH)') +
+    background_grid(major = 'xy') + 
+    panel_border(color = 'gray60', size = 0.5) +
+    theme(text = element_text(size = 8), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 6), plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm"), legend.position = 'none', panel.grid.major = element_line(size = 0.25)) 
+
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_annotation_ranking/per_gene_annot_changes_density.pdf')
+dir.create(dirname(file_name), recursive = TRUE)
+
+ggsave(file_name, plot = annot_change_density, width = 8.8, height = 3, units = 'cm', dpi = 750, device = cairo_pdf, limitsize=FALSE)
+
 
 # explore the meaningfulness of the annotation probability differences
 first_diffs = first_rank_subset[, .(abs(diff(no_annot_prob)), abs(diff(mh_annot_prob))), by = .(index, same_top_rank, avg_index_mh)]
@@ -151,3 +166,16 @@ file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis
 dir.create(dirname(file_name), recursive = TRUE)
 
 ggsave(file_name, plot = meaning, width = 8.8, height = 9.5, units = 'cm', dpi = 750, device = cairo_pdf, limitsize=FALSE)
+
+mag_density = ggplot(first_diffs)+
+    geom_density(aes(x = abs_diff_mh_annot_prob, y = after_stat(count)), fill = '#7570b3', alpha = 0.8, linewidth = 0.25) +
+    theme_cowplot(font_family = 'Arial') + 
+    xlab('Absolute difference in MH model probabilities\n(for top MH vs top no-MH annotations)')+
+    background_grid(major = 'xy') + 
+    panel_border(color = 'gray60', size = 0.5) +
+    theme(text = element_text(size = 8), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 6), plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm"), legend.position = 'none', panel.grid.major = element_line(size = 0.25)) 
+
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_annotation_ranking/change_magnitude_density.pdf')
+dir.create(dirname(file_name), recursive = TRUE)
+
+ggsave(file_name, plot = mag_density, width = 8.8, height = 3, units = 'cm', dpi = 750, device = cairo_pdf, limitsize=FALSE)
