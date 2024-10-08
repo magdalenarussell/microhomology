@@ -4,5 +4,4 @@ This directory contains sampling procedure specific files which are associated w
 
 The options are:
 
-- [p_gene_given_subject.R]: which ensures that each individual gets equal weight in the construction of the likelihood
-- [p_gene_marginal.R]: which ensures that each individual and gene gets equal weight in the construction of the likelihood
+- [p_gene_pooled.R]: which pools data from all individuals for model training
