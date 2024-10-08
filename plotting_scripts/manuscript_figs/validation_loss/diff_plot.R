@@ -157,8 +157,8 @@ plot_loss = ggplot(tog_diff_long) +
          scale_fill_brewer(palette = 'Dark2') +
          labs(fill = 'Model comparison')
 
-file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/trimMH_ligationMH_model/loss_compare.pdf')
-legend_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/trimMH_ligationMH_model/legend.pdf')
+file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/loss_compare.pdf')
+legend_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/legend.pdf')
 
 legend = get_legend(plot_loss)
 plot_loss = plot_loss + theme(legend.position = 'none')
@@ -189,6 +189,6 @@ plot_mae = ggplot(mae_diff_long) +
              scale_fill_brewer(palette = 'Dark2') +
              labs(fill = 'Model comparison')
 
-file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/trimMH_ligationMH_model/mae_compare.pdf')
+file_name = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/mae_compare.pdf')
 
 ggsave(file_name, plot = plot_mae, width = 4.3, height = 7.5, units = 'cm', dpi = 750, device = cairo_pdf)

@@ -14,7 +14,7 @@ library(RhpcBLASctl)
 omp_set_num_threads(1)
 blas_set_num_threads(1)
 
-PARAM_GROUP <<- 'nonproductive_v-j_trim_ligation-mh'
+PARAM_GROUP <<- 'both_v-j_trim_ligation-mh'
 source(paste0(MOD_PROJECT_PATH, '/scripts/param_groups/', PARAM_GROUP, '.R'))
 
 NCPU <<- as.numeric(2)
@@ -52,7 +52,7 @@ for (trim_model in TRIMMING_PROB_MODEL){
             }
             coefs = fread(coef_path)
 
-            fwrite(coefs, paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/mh_simulator_experiments/motif_base_count_average-mh_ligation-mh_trims_from_motif_base_count_experiment_EM_ligMH_trimMH_sims/', PARAM_GROUP, '/coefs_MHprob', param, '_', param2, '_', trim_model, '_trim-model.tsv'), sep = '\t')
+            fwrite(coefs, paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/mh_simulator_experiments/', PARAM_GROUP, '/coefs_MHprob', param, '_', param2, '_', trim_model, '_trim-model.tsv'), sep = '\t')
 
             v_motif_heatmap = plot_motif_coefficient_heatmap_single_group(coefs[trim_type == 'v_trim'], with_values = FALSE, limits = c(-0.450, 0.450)) + ggtitle('   V-trimming coefficients')
             j_motif_heatmap = plot_motif_coefficient_heatmap_single_group(coefs[trim_type == 'j_trim'], with_values = FALSE, limits = c(-0.450, 0.450)) + ggtitle('   J-trimming coefficients')
@@ -93,7 +93,7 @@ for (trim_model in TRIMMING_PROB_MODEL){
     together = plot_grid(together00, NULL, together10, NULL, together01, NULL, together11, ncol = 7, rel_widths = c(1, 0.10, 1, 0.10, 1, 0.10, 1))
 
     # save plot
-    file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/mh_simulator_experiments/motif_base_count_average-mh_ligation-mh_trims_from_motif_base_count_experiment_EM_ligMH_trimMH_sims/', PARAM_GROUP, '/coef_heatmap_', trim_model, '_trim-model.pdf')
+    file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/mh_simulator_experiments/', PARAM_GROUP, '/coef_heatmap_', trim_model, '_trim-model.pdf')
 
     ggsave(file_name, plot = together, width = 72, height = 24, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
 }

@@ -31,7 +31,7 @@ MODEL_TYPE = 'motif_two-side-base-count-beyond_average-mh_ligation-mh'
 source(paste0(MOD_PROJECT_PATH,'/plotting_scripts/plotting_functions.R'))
 source(paste0(MOD_PROJECT_PATH,'/scripts/data_compilation_functions.R'))
 
-file_root = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/trimMH_ligationMH_model/')
+file_root = paste0(PROJECT_PATH, '/plotting_scripts/manuscript_figs/validation_loss/')
 
 model_types = list('motif_two-side-base-count-beyond_average-mh_ligation-mh' = c(1,2), 'motif_two-side-base-count-beyond' = c(1, 2), 'motif_left-base-count-beyond_average-mh_ligation-mh' = c(1,2), 'motif_right-base-count-beyond_average-mh_ligation-mh' = c(1,2), 'null' = c(0,0), 'two-side-base-count-beyond_average-mh_ligation-mh' = c(0,0))
 L2 = 'True'
