@@ -2,6 +2,7 @@
 
 This directory contains plotting scripts and files: 
 
-* [Scripts to recreate manuscript plots](manuscript_plots)
+* [Scripts to recreate manuscript plots](manuscript_figs)
+* [Scripts to recreate additional plots](other_figs)
 * [Main plotting functions](plotting_functions.R)
-* Additional plotting functions are contained in the other scripts here
+* [Path related functions](plot_paths.R)

@@ -1,5 +1,6 @@
 # microhomology
-The goal of this project is to use model-based statistical inference to identify the extent of microhomology involvement for nucleotide trimming and ligation during V(D)J recomination of adaptive immune receptor loci.
+The goal of this project is to use model-based statistical inference to identify the extent of microhomology involvement in nucleotide trimming and ligation processes during V(D)J recomination of adaptive immune receptor loci.
+
 
 # Install
 Everything R 4.1.3 and/or Python 3.11.5 based. Python and R packages that are required can be installed via [miniconda](https://docs.conda.io/en/latest/miniconda.html): 
@@ -12,11 +13,13 @@ conda activate microhomology_jax
 You will also need to install IGoR if you wish to annotate sequences using IGoR (Marcou et.al Nature Communications 2018)
 
 
+
 # Requirements: 
 Most of these analyses can be run on any machine.
 However, some of the data preparation steps, such as sequence annotation using IGoR (Marcou et.al Nature Communications 2018), are computationally intensive and require a cluster to run efficiently.
-This sequence annotation script is written specifically for a cluster set up to use the Slurm job scheduler. 
-(Some minor modifications to the [sequence annotation script](scripts/annotate_with_igor.sh) could allow this step to be run locally or using a different cluster workload manager. 
+This [sequence annotation script](scripts/annotate_with_igor.sh) is written specifically for a cluster set up to use the Slurm job scheduler. 
+Some minor modifications could allow this step to be run locally or using a different cluster workload manager. 
+
 
 # Analysis outline: 
 
@@ -34,7 +37,8 @@ __Table of Contents:__
 
 0. Download your training dataset of interest; We are using a dataset consisting of sequences published in these two publications: [here](https://doi.org/10.1016/j.molimm.2020.09.003) and [here](https://doi.org/10.1016/j.jaut.2021.102616)
     1. We downloaded processed repertoire data from these publications from the Adaptive ImmuneACCESS portal: [here](https://doi.org/10.21417/NH2020MI) and [here](https://doi.org/10.21417/NH2021JA)
-1. Annotate these sequences using IGoR. You can run the [annotation script](igor_annotation_scripts/annotate_with_igor.sh) to do this. As described above, this script is written specifically for a cluster set up to use the Slurm job scheduler. This script takes five arguments:
+1. Annotate these sequences using IGoR. You can run the [annotation 
+script](igor_annotation_scripts/annotate_with_igor.sh) to do this. As described above, this script is written specifically for a cluster set up to use the Slurm job scheduler. This script takes five arguments:
     1. the raw file path (wherever you downloaded the files in step 0 above)
     2. a temporary directory location (wherever you want the intermediate annotation files to be stored)
     3. a boolean value representing whether the sequences were downloaded from the Adaptive ImmuneACCESS portal (if `TRUE`, the sequences require some extra processing)
@@ -79,6 +83,7 @@ Here is a summary of some of the parameter group options:
 |                                      |                                                                                                 |                                                    | motif + two-side-base-count-beyond + average-mh               | 1x2 trimming motif, the count of AT and GC nucleotides on either side of the trimming site, for both the V-gene trimming site and J-gene trimming site, and the average number of contiguous MH nucleotides across all possible ligation configurations        | None                                                   | `motif_two-side-base-count-beyond_average-mh`             | `twostep_motif_two-side-base-count-beyond_average-mh`             |
 |                                      |                                                                                                 |                                                    | motif + two-side-base-count-beyond + ligation-mh              | 1x2 trimming motif and the count of AT and GC nucleotides on either side of the trimming site, for both the V-gene trimming site and J-gene trimming site                                                                                                      | Number of MH nucleotides within ligation configuration | `motif_two-side-base-count-beyond_ligation-mh`            | `twostep_motif_two-side-base-count-beyond_ligation-mh`            |
 |                                      |                                                                                                 |                                                    | motif + two-side-base-count-beyond + average-mh + ligation-mh | 1x2 trimming motif, the count of AT and GC nucleotides on either side of the trimming site, for both the V-gene trimming site and J-gene trimming site, and the average number of contiguous MH nucleotides across all possible ligation configurations        | Number of MH nucleotides within ligation configuration | `motif_two-side-base-count-beyond_average-mh_ligation-mh` | `twostep_motif_two-side-base-count-beyond_average-mh_ligation-mh` |
+
 
 
 ## Quantifying coefficient significance
@@ -149,12 +154,8 @@ Summary of the model validation data sets used in our analysis:
 
 | Locus/Junction name  | Code argument           | Data used in the manuscript                                                                                                                                                                                                                                 |
 |-------------|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| _TRA locus/VJ junction_ | `validation_data_alpha` | TODO  |
-| _TRB locus/VD junction_ | `validation_data_beta_vd`  | TODO  |
-| _TRB locus/DJ junction_ | `validation_data_beta_dj`  | TODO  |
-| _TRG locus/VJ junction_ | `validation_data_gamma` | TODO  |
-| _IGH locus/VD junction_ | `validation_data_igh_vd`   | TODO  | 
-| _IGH locus/DJ junction_ | `validation_data_igh_dj`   | TODO  | 
+| _TRA locus/VJ junction_ | `validation_data_alpha` | [here](https://doi.org/10.1016/j.jaut.2021.102616) |
+| _TRG locus/VJ junction_ | `validation_data_gamma` | [here](https://clients.adaptivebiotech.com/pub/TCRB-TCRG-comparison)  |
 
 
 ## Plot results
@@ -162,6 +163,7 @@ Summary of the model validation data sets used in our analysis:
 Plot [figures](plotting_scripts/manuscript_plots) from the manuscript.
 
 Also, have a look at the plotting [README](plotting_scripts/README.md) for more details.
+
 
 
 # About the analysis

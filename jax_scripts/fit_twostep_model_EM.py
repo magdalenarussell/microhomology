@@ -88,7 +88,8 @@ predictor = TwoStepConditionalLogisticRegressionPredictorEM(model=model,
                                                       repeat_obs_colname = model_params.repeat_obs_colname,
                                                       choice_colname = model_params.choice_colname,
                                                       choice2_colname = model_params.choice2_colname,
-                                                      params = params)
+                                                      training_params = params,
+                                                      validation_params = params)
 
 # write predictions and coefficients
 if not BOOTSTRAP:

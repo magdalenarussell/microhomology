@@ -511,16 +511,23 @@ class TwoStepConditionalLogisticRegressionPredictorEM(TwoStepDataTransformerEM):
 
         # get predicted probabilities
         probs = self.model.get_joint_prob(choice1_variable_matrix, choice2_variable_matrix, all_site_mask_matrix, prod_mask_matrix, self.model.coefs, training_mode=False)
+        choice1_probs, choice2_probs = self.model.get_indiv_prob(choice1_variable_matrix, choice2_variable_matrix, all_site_mask_matrix, prod_mask_matrix, self.model.coefs, training_mode=False)
+        choice1_probs = choice1_probs.reshape(choice1_probs.shape[0], choice1_probs.shape[1], 1)
+
         # transform probs to a dataframe
         choice1_cols = self.get_mapping_dict(new_df, self.choice_colname)
         choice2_cols = self.get_mapping_dict(new_df, self.choice2_colname)
         group_cols = self.get_mapping_dict(new_df, self.group_colname)
         if len(group_cols) == 1:
             probs = probs.reshape((len(group_cols), len(choice1_cols), len(choice2_cols)))
+            choice1_probs = choice1_probs.reshape((len(group_cols), len(choice1_cols), len(choice2_cols)))
+            choice2_probs = choice2_probs.reshape((len(group_cols), len(choice1_cols), len(choice2_cols)))
 
         # Convert the 3D array to a 2D array where each "page" is flattened out
         # and then stack them vertically
         array_2d = probs.reshape(-1, probs.shape[2])
+        c1_array_2d = choice1_probs.reshape(-1, choice1_probs.shape[2])
+        c2_array_2d = choice2_probs.reshape(-1, choice2_probs.shape[2])
 
         # Create a MultiIndex representing the first two dimensions (depth and rows)
         # np.repeat and np.tile help to properly align the indices with the reshaped array
@@ -535,6 +542,22 @@ class TwoStepConditionalLogisticRegressionPredictorEM(TwoStepDataTransformerEM):
                             var_name=self.choice2_colname,
                             value_name='predicted_prob')
 
+        c1_prob_df = pd.DataFrame(c1_array_2d, index=index, columns=[i for i in range(choice1_probs.shape[2])])
+        c1_prob_df = c1_prob_df.reset_index()
+
+        c1_melted_df = pd.melt(c1_prob_df,
+                            id_vars=[self.group_colname,self.choice_colname],
+                            value_name='trimming_config_predicted_prob').drop('variable', axis = 1)
+
+        c2_prob_df = pd.DataFrame(c2_array_2d, index=index, columns=[i for i in range(choice2_probs.shape[2])])
+        c2_prob_df = c2_prob_df.reset_index()
+
+        c2_melted_df = pd.melt(c2_prob_df,
+                            id_vars=[self.group_colname, self.choice_colname],
+                            var_name=self.choice2_colname,
+                            value_name='ligation_config_predicted_prob')
+
+
         # Invert the dictionary
         choice1_mapping = {v: k for k, v in choice1_cols.items()}
         choice2_mapping = {v: k for k, v in choice2_cols.items()}
@@ -544,9 +567,21 @@ class TwoStepConditionalLogisticRegressionPredictorEM(TwoStepDataTransformerEM):
         melted_df[self.group_colname] = melted_df[self.group_colname].map(group_mapping)
         melted_df[self.choice_colname] = melted_df[self.choice_colname].map(choice1_mapping)
         melted_df[self.choice2_colname] = melted_df[self.choice2_colname].map(choice2_mapping)
+        c1_melted_df[self.group_colname] = c1_melted_df[self.group_colname].map(group_mapping)
+        c1_melted_df[self.choice_colname] = c1_melted_df[self.choice_colname].map(choice1_mapping)
+        c2_melted_df[self.group_colname] = c2_melted_df[self.group_colname].map(group_mapping)
+        c2_melted_df[self.choice_colname] = c2_melted_df[self.choice_colname].map(choice1_mapping)
+        c2_melted_df[self.choice2_colname] = c2_melted_df[self.choice2_colname].map(choice2_mapping)
+
 
         # merge predicted probabilities with original df
         merged_df = pd.merge(new_df, melted_df,
+                             on=[self.group_colname, self.choice_colname, self.choice2_colname],
+                             how='inner')
+        merged_df = pd.merge(merged_df, c1_melted_df,
+                             on=[self.group_colname, self.choice_colname],
+                             how='inner')
+        merged_df = pd.merge(merged_df, c2_melted_df,
                              on=[self.group_colname, self.choice_colname, self.choice2_colname],
                              how='inner')
 

@@ -39,6 +39,13 @@ params = variable_configuration.global_paramaters(MOD_OUTPUT_PATH,
                                                   RIGHT_NUC_MOTIF_COUNT,
                                                   MODEL_TYPE)
 
+val_params = variable_configuration.global_paramaters(MOD_OUTPUT_PATH,
+                                                  MOD_PROJECT_PATH,
+                                                  ANNOTATION_TYPE,
+                                                  PARAM_GROUP,
+                                                  LEFT_NUC_MOTIF_COUNT,
+                                                  RIGHT_NUC_MOTIF_COUNT,
+                                                  MODEL_TYPE)
 # set model type specific parameters
 model_params = variable_configuration.model_specific_parameters(PARAM_GROUP,
                                                                 MODEL_TYPE,
@@ -66,7 +73,8 @@ predictor = TwoStepConditionalLogisticRegressionPredictorEM(model=evaluator.mode
                                                       repeat_obs_colname = model_params.repeat_obs_colname,
                                                       choice_colname = model_params.choice_colname,
                                                       choice2_colname = model_params.choice2_colname,
-                                                      params = params)
+                                                      training_params = params,
+                                                      validation_params = val_params)
 
 # write predictions and coefficients
 training_pred = predictor.predict(new_df=processed_data)
