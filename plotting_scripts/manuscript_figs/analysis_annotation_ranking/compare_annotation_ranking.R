@@ -145,6 +145,35 @@ dir.create(dirname(file_name), recursive = TRUE)
 ggsave(file_name, plot = annot_change_density, width = 8.8, height = 3, units = 'cm', dpi = 750, device = cairo_pdf, limitsize=FALSE)
 
 
+# get more complex df
+first_rank[mh_annot_rank == no_annot_rank, same_top_rank := TRUE]
+first_rank[mh_annot_rank != no_annot_rank, same_top_rank := FALSE]
+changed_simple2 = first_rank[, .N, by = .(index, v_gene, j_gene, same_top_rank, total_annot_count)]
+changed_simple2[total_annot_count > 1 & same_top_rank == TRUE, annot_count := 'multiple possible annotations,\nbut same top-ranked']
+changed_simple2[total_annot_count > 1 & same_top_rank == FALSE, annot_count := 'multiple possible annotations,\nbut different top-ranked']
+changed_simple2[total_annot_count == 1, annot_count := 'single possible annotation']
+s3 = changed_simple2[, .N, by = .(v_gene, j_gene, same_top_rank, annot_count)]
+s3[, prop:= N/sum(N), by = .(v_gene, j_gene)]
+s3$indicator = 1
+
+annot_change_density_all = ggplot(s3)+
+    # geom_density(aes(x = prop, y = after_stat(count), fill = annot_count), alpha = 0.8, linewidth = 0.25, position = "identity") +
+    geom_histogram(aes(x = prop, fill = annot_count), alpha = 0.8, position = "identity", binwidth = 0.01) +
+
+    theme_cowplot(font_family = 'Arial') + 
+    xlab('Proportion of sequences per gene pair') +
+    scale_fill_brewer(palette = 'Dark2') +
+    background_grid(major = 'xy') + 
+    panel_border(color = 'gray60', size = 0.1) +
+    labs(fill = NULL) +
+    theme(text = element_text(size = 16), axis.line = element_blank(), axis.ticks = element_blank(), axis.text = element_text(size = 12), plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm"), legend.position = 'bottom', panel.grid.major = element_line(size = 0.25)) 
+
+file_name = paste0(MOD_PROJECT_PATH, '/plotting_scripts/manuscript_figs/analysis_annotation_ranking/per_gene_annot_changes_density_stacked.pdf')
+dir.create(dirname(file_name), recursive = TRUE)
+
+ggsave(file_name, plot = annot_change_density_all, width = 10, height = 3, units = 'in', dpi = 750, device = cairo_pdf, limitsize=FALSE)
+
+
 # explore the meaningfulness of the annotation probability differences
 first_diffs = first_rank_subset[, .(abs(diff(no_annot_prob)), abs(diff(mh_annot_prob))), by = .(index, same_top_rank, avg_index_mh)]
 setnames(first_diffs, 'V1', 'abs_diff_no_annot_prob')

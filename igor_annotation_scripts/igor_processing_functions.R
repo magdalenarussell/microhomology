@@ -81,6 +81,9 @@ get_raw_cdr3_seqs <- function(tcr_repertoire_file, adaptive){
         if ('sequence' %in% colnames(data)){
             setnames(data, 'sequence', 'rearrangement')
         }
+        if ('CDR3nt' %in% colnames(data)){
+            setnames(data, 'CDR3nt', 'rearrangement')
+        }
     }
     stopifnot('rearrangement' %in% colnames(data))
     cdr3s = data$rearrangement
