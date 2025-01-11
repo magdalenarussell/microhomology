@@ -45,7 +45,7 @@ tog_all = merge(pred, no_pred, by = c('index', 'v_gene', 'j_gene', 'v_trim', 'j_
 
 # for analysis purposes, remove sequence indices that lack a possible zero MH annotation
 valid_indices = unique(tog_all[ligation_mh == 0]$index)
-tog = tog[index %in% valid_indices]
+tog = tog_all[index %in% valid_indices]
 
 
 # convert probabilities to be p_annot
@@ -149,7 +149,7 @@ s2$indicator = 1
 
 # compare MH to number of changes
 regression_result = lm(prop ~ avg_pair_mh, data = s2[annot_count %like% 'different'])
-cor.test( s2[annot_count %like% 'different']$prop,  s2[annot_count %like% 'different']$avg_pair_mh, method = "pearson")
+corr = cor.test( s2[annot_count %like% 'different']$prop,  s2[annot_count %like% 'different']$avg_pair_mh, method = "pearson")
 
 annot_changes = ggplot(s2[annot_count %like% 'different'])+
     geom_hex(aes(y = avg_pair_mh, x = prop))+
