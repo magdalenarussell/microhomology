@@ -3,6 +3,10 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 import jaxopt
+import os
+os.environ["JAX_PLATFORM_NAME"] = "cpu"
+jax.config.update('jax_default_device', jax.devices('cpu')[0])
+jax.config.update("jax_disable_jit", True)
 import patsy
 import dill
 import pickle
@@ -612,7 +616,7 @@ class ConditionalLogisticRegressor(DataTransformer):
         # Calculate the probability of the observed choices
         # Dimensions of this matrix are groups x choices
         # replace missing choices with -INF so that they will not count towards probability
-        probs = jax.nn.softmax(jnp.where(reshaped_mask, reshape, jnp.NINF))
+        probs = jax.nn.softmax(jnp.where(reshaped_mask, reshape, -jnp.inf))
 
         return probs
 
@@ -650,7 +654,7 @@ class ConditionalLogisticRegressor(DataTransformer):
         mh_list = [var in var_list for var in self.variable_colnames]
 
         if any(mh_list):
-            binary_mh_list = [int(b) for b in mh_list]
+            binary_mh_list = [jnp.array(b, dtype=int) for b in mh_list]
             binary_mh_jnp = jnp.array(binary_mh_list).reshape(-1, 1)
             coef_subset = coefs * binary_mh_jnp
             c = jnp.nansum(coef_subset**2)

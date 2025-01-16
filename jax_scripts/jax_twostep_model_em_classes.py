@@ -3,6 +3,10 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 import jaxopt
+import os
+os.environ["JAX_PLATFORM_NAME"] = "cpu"
+jax.config.update('jax_default_device', jax.devices('cpu')[0])
+jax.config.update("jax_disable_jit", True)
 import patsy
 import dill
 import pickle
@@ -24,6 +28,69 @@ class TwoStepDataTransformerEM(TwoStepDataTransformer):
         self.input_choice2_variable_colnames = choice2_variable_colnames
         self.input_choice2_colname = choice2_colname
         self.coefs = None
+        self.initial_coefs = self.get_ones_coef_array()
+
+    # Get ligation choice probabilities given coefficients
+    def get_choice2_prob(self, choice2_variables, all_site_mask, prod_mask, coefs=None, training_mode=False):
+        """
+        Computes individual probabilities for the first and second choices given the input variables and coefficients.
+
+        Args:
+            choice2_variables (ndarray): Variables influencing the second choice.
+            all_site_mask (ndarray): Mask indicating valid data entries.
+            coefs (ndarray, optional): Coefficients for the logistic regression model. If None, uses the trained model coefficients.
+
+        Returns:
+            tuple: one ndarray for the probabilities of the second choices.
+        """
+        if coefs is None:
+            coefs = self.coefs
+
+        assert coefs is not None, "Need to train the model before making predictions!"
+
+        coef_total = coefs.shape[0]
+        choice2_coefs = coefs[(coef_total - len(self.choice2_variable_colnames)):]
+
+        if self.choice2_null:
+            choice2_coefs = jnp.ones(1)
+
+        # Compute the logits for each choice
+        choice2_cov = jnp.dot(choice2_variables, choice2_coefs)
+        choice2_reshape = jnp.squeeze(choice2_cov)
+        reshaped_prod_mask = jnp.squeeze(prod_mask)
+        reshaped_all_mask = jnp.squeeze(all_site_mask)
+
+        if len(reshaped_prod_mask.shape) == 2:
+            reshaped_prod_mask = reshaped_prod_mask.reshape((choice2_variables.shape[0], choice2_variables.shape[1], choice2_variables.shape[2]))
+
+        # Calculate the productivity probability
+        # replace missing choices with -INF so that they will not count towards probability
+        # start by getting sum of choice2 probs for sites with desired productivity, then all sites
+        exp_choice2_var_prod = jnp.exp(jnp.where(reshaped_prod_mask, choice2_reshape, -jnp.inf))
+        exp_choice2_var_all = jnp.exp(jnp.where(reshaped_all_mask, choice2_reshape, -jnp.inf))
+
+        prod_prob_numerator = jnp.sum(exp_choice2_var_prod, axis = 2)
+        prod_prob_denominator = jnp.sum(exp_choice2_var_all, axis = 2)
+        prod_prob = prod_prob_numerator/prod_prob_denominator
+
+        # next, get softmax of choice2
+        choice2_probs = jax.nn.softmax(jnp.where(reshaped_prod_mask, choice2_reshape, -jnp.inf))
+        choice2_probs = jnp.where(jnp.isnan(choice2_probs), 0, choice2_probs)
+
+        return choice2_probs
+
+    def get_weighted_avg_mh(self, mh_matrix, choice2_variables, all_site_mask, prod_mask, coefs=None):
+        choice2_probs = self.get_choice2_prob(choice2_variables, all_site_mask, prod_mask, coefs, training_mode = False)
+        mh_matrix_reshape = jnp.squeeze(mh_matrix, axis=-1)
+        mh_weights = mh_matrix_reshape * choice2_probs
+        mh_weights_sum = mh_weights.sum(axis = 2)
+        return mh_weights_sum
+
+    def reset_weighted_avg_mh(self, mh_weights, choice1_variables):
+        if 'weighted_avg_mh' in self.choice1_variable_colnames:
+            var_index = self.choice1_variable_colnames.index('weighted_avg_mh')
+            choice1_variables = choice1_variables.at[:, :, var_index].set(mh_weights)
+        return choice1_variables
 
     def get_matrices(self, df, pretrain=True, replace_object=None, return_df=False):
         """
@@ -38,6 +105,7 @@ class TwoStepDataTransformerEM(TwoStepDataTransformer):
         Returns:
             tuple: Contains matrices for choice1 variables, choice2 variables, counts, non-repeat groups, and all_site_mask, along with the optionally returned preprocessed DataFrame.
         """
+
         df = self.preprocess_data(df, pretrain)
         df['seq_index'] = df['index']
 
@@ -67,6 +135,9 @@ class TwoStepDataTransformerEM(TwoStepDataTransformer):
             choice2_final_shape = (len(groups), len(choices), len(choice2s), 1)
             choice2_int_shape = (len(groups), 1, len(choices), len(choice2s))
             self.choice2_null = True
+
+        mh_shape = (len(groups), len(choices), len(choice2s), 1)
+        mh_int_shape = (len(groups), 1, len(choices), len(choice2s))
 
         counts_shape = (len(groups), len(choices), len(choice2s), 1)
         indices_shape = (len(indices), len(groups), len(choices), len(choice2s), 1)
@@ -107,6 +178,14 @@ class TwoStepDataTransformerEM(TwoStepDataTransformer):
         # reorder columns to reflect correct order
         choice2_pivot_vars = choice2_pivot_vars.reindex(choice2_var_mapping_df.VarName.tolist(), axis=1, level = 0)
 
+        mh_pivot_vars = df_full.pivot_table(index=[self.group_colname],
+                                    columns=[self.choice_colname, self.choice2_colname],
+                                    values=['ligation_mh'],
+                                    fill_value=0)
+        # reorder columns to reflect correct order
+        mh_pivot_vars = mh_pivot_vars.reindex(['ligation_mh'], axis=1, level = 0)
+
+
         if self.choice1_null:
             choice1_mat = jnp.ones(choice1_final_shape)
         else:
@@ -123,6 +202,10 @@ class TwoStepDataTransformerEM(TwoStepDataTransformer):
             choice2_mat = choice2_mat.transpose((0, 2, 3, 1))
 
         assert choice2_mat.shape == choice2_final_shape, "choice2 variable matrix is the incorrect dimension"
+
+        mh_mat = jnp.array(mh_pivot_vars).reshape(mh_int_shape)
+        mh_mat = mh_mat.transpose((0, 2, 3, 1))
+
 
         # Assuming groups is a list of unique group identifiers
         group_indices = {group: idx for idx, group in enumerate(groups)}
@@ -153,10 +236,19 @@ class TwoStepDataTransformerEM(TwoStepDataTransformer):
         if replace_object is not None:
             setattr(self, replace_object, df)
 
-        if return_df:
-            return choice1_mat, choice2_mat, counts_mat, nonrepeat_groups_mat, all_site_mask_mat, index_mat, prod_mask_mat, df
+        if self.coefs is None:
+            coefs = self.initial_coefs
         else:
-            return choice1_mat, choice2_mat, counts_mat, nonrepeat_groups_mat, all_site_mask_mat, index_mat, prod_mask_mat
+            coefs = self.coefs
+
+        mh_weights = self.get_weighted_avg_mh(mh_mat, choice2_mat, all_site_mask_mat, prod_mask_mat, coefs=coefs)
+
+        choice1_mat = self.reset_weighted_avg_mh(mh_weights, choice1_mat)
+
+        if return_df:
+            return choice1_mat, choice2_mat, counts_mat, nonrepeat_groups_mat, all_site_mask_mat, index_mat, prod_mask_mat, mh_mat, df
+        else:
+            return choice1_mat, choice2_mat, counts_mat, nonrepeat_groups_mat, all_site_mask_mat, index_mat, prod_mask_mat, mh_mat
 
 
 
@@ -165,7 +257,7 @@ class TwoStepConditionalLogisticRegressorEM(TwoStepDataTransformerEM, TwoStepCon
         super().__init__(training_df=None, variable_colnames=variable_colnames, choice1_variable_colnames=choice1_variable_colnames, choice2_variable_colnames=choice2_variable_colnames, count_colname=count_colname, group_colname=group_colname, repeat_obs_colname=repeat_obs_colname, choice_colname=choice_colname, choice2_colname=choice2_colname, params=params)
         self.training_df = training_df
         if training_df is not None:
-            self.choice1_variable_matrix, self.choice2_variable_matrix, self.counts_matrix, self.nonrepeat_grp_matrix, self.all_site_mask_matrix, self.index_matrix, self.prod_mask_matrix = self.get_matrices(training_df, replace_object='training_df')
+            self.choice1_variable_matrix, self.choice2_variable_matrix, self.counts_matrix, self.nonrepeat_grp_matrix, self.all_site_mask_matrix, self.index_matrix, self.prod_mask_matrix, self.mh_matrix = self.get_matrices(training_df, replace_object='training_df')
         self.original_choice1_variable_colnames = choice1_variable_colnames
         self.original_choice2_variable_colnames = choice2_variable_colnames
         self.original_choice2_colname = choice2_colname
@@ -305,14 +397,19 @@ class TwoStepConditionalLogisticRegressorEM(TwoStepDataTransformerEM, TwoStepCon
         kf = GroupKFold(n_splits=fold_count)
         scores = []
 
-        for train_index, val_index in kf.split(X=self.choice1_variable_matrix, y=self.counts_matrix, groups=self.nonrepeat_grp_matrix):
-            train_c1_data, train_c2_data, val_c1_data, val_c2_data = self.choice1_variable_matrix[train_index], self.choice2_variable_matrix[train_index], self.choice1_variable_matrix[val_index], self.choice2_variable_matrix[val_index]
-            train_counts, val_counts = self.counts_matrix[train_index], self.counts_matrix[val_index]
-            train_all_site_mask, val_all_site_mask = self.all_site_mask_matrix[train_index], self.all_site_mask_matrix[val_index]
-            train_pp, val_pp = self.prod_mask_matrix[train_index], self.prod_mask_matrix[val_index]
-            train_index, val_index = self.index_matrix[train_index], self.index_matrix[val_index]
+        for train_i, val_i in kf.split(X=self.choice1_variable_matrix, y=self.counts_matrix, groups=self.nonrepeat_grp_matrix):
+            train_c1_data, train_c2_data, val_c1_data, val_c2_data = self.choice1_variable_matrix[train_i], self.choice2_variable_matrix[train_i], self.choice1_variable_matrix[val_i], self.choice2_variable_matrix[val_i]
+            train_counts, val_counts = self.counts_matrix[train_i], self.counts_matrix[val_i]
+            train_all_site_mask, val_all_site_mask = self.all_site_mask_matrix[train_i], self.all_site_mask_matrix[val_i]
+            train_pp, val_pp = self.prod_mask_matrix[train_i], self.prod_mask_matrix[val_i]
+            train_index, val_index = self.index_matrix[train_i], self.index_matrix[val_i]
+            train_mh, val_mh = self.mh_matrix[train_i], self.mh_matrix[val_i]
             train_counts = self.reset_weighted_observations(train_counts)
             val_counts = self.reset_weighted_observations(val_counts)
+
+            train_mh_weights = self.get_weighted_avg_mh(train_mh, train_c2_data, train_all_site_mask, train_pp, coefs=starting_coefs)
+
+            train_c1_data = self.reset_weighted_avg_mh(train_mh_weights, train_c1_data)
 
             # Train the model on the training data
             marg_weights = self.get_index_weights(train_c1_data, train_c2_data, train_all_site_mask, train_index, train_pp, starting_coefs)
@@ -321,6 +418,8 @@ class TwoStepConditionalLogisticRegressorEM(TwoStepDataTransformerEM, TwoStepCon
 
             # Compute the loss on the validation data
             val_marg_weights = self.get_index_weights(val_c1_data, val_c2_data, val_all_site_mask, val_index, val_pp, model.params)
+            val_mh_weights = self.get_weighted_avg_mh(val_mh, val_c2_data, val_all_site_mask, val_pp, coefs=model.params)
+            val_c1_data = self.reset_weighted_avg_mh(val_mh_weights, val_c1_data)
 
             loss = self.loss_fn(model.params,
                                 val_marg_weights,
@@ -417,6 +516,10 @@ class TwoStepConditionalLogisticRegressorEM(TwoStepDataTransformerEM, TwoStepCon
         while iteration < maxiterEM and EMlossTol > toleranceEM:
             iteration += 1
 
+            mh_weights = self.get_weighted_avg_mh(self.mh_matrix, self.choice2_variable_matrix, self.all_site_mask_matrix, self.prod_mask_matrix, coefs=coefs)
+
+            self.choice1_variable_matrix = self.reset_weighted_avg_mh(mh_weights, self.choice1_variable_matrix)
+
             marg_weights = self.get_index_weights(self.choice1_variable_matrix, self.choice2_variable_matrix, self.all_site_mask_matrix, self.index_matrix, self.prod_mask_matrix, coefs)
 
             res = self.m_step(self.choice1_variable_matrix,
@@ -493,6 +596,8 @@ class TwoStepConditionalLogisticRegressionPredictorEM(TwoStepDataTransformerEM):
         self.input_choice2_variable_colnames = choice2_variable_colnames
         self.input_choice2_colname = choice2_colname
         self.model = model
+        self.coefs = self.model.coefs
+
         if not isinstance(model, TwoStepConditionalLogisticRegressorEM):
             raise TypeError("'model' must be a TwoStepConditionalLogisticRegressorEM object")
 
@@ -507,7 +612,7 @@ class TwoStepConditionalLogisticRegressionPredictorEM(TwoStepDataTransformerEM):
             ValueError: If the number of variable columns in the input DataFrame doesn't match the model's coefficients.
         """
         original_new_df = new_df
-        choice1_variable_matrix, choice2_variable_matrix, counts_matrix, nonrepeat_grp_matrix, all_site_mask_matrix, index_matrix, prod_mask_matrix, new_df = self.get_matrices(new_df, pretrain=False, return_df=True)
+        choice1_variable_matrix, choice2_variable_matrix, counts_matrix, nonrepeat_grp_matrix, all_site_mask_matrix, index_matrix, prod_mask_matrix, mh_matrix, new_df = self.get_matrices(new_df, pretrain=False, return_df=True)
 
         # get predicted probabilities
         probs = self.model.get_joint_prob(choice1_variable_matrix, choice2_variable_matrix, all_site_mask_matrix, prod_mask_matrix, self.model.coefs, training_mode=False)
@@ -603,7 +708,7 @@ class TwoStepConditionalLogisticRegressionPredictorEM(TwoStepDataTransformerEM):
         Returns:
             float: The computed loss.
         """
-        choice1_variable_matrix, choice2_variable_matrix, counts_matrix, nonrepeat_grp_matrix, all_site_mask_matrix, index_matrix, prod_mask_matrix = self.get_matrices(new_df, pretrain=False)
+        choice1_variable_matrix, choice2_variable_matrix, counts_matrix, nonrepeat_grp_matrix, all_site_mask_matrix, index_matrix, prod_mask_matrix, mh_matrix = self.get_matrices(new_df, pretrain=False)
 
         assert counts_matrix is not None, "counts column is needed"
 
@@ -643,6 +748,7 @@ class TwoStepConditionalLogisticRegressionEvaluatorEM(TwoStepDataTransformerEM):
     """
     def __init__(self, model_path, training_params, validation_params, training_df = None, validation_df = None):
         self.model = self.load_model(model_path)
+        self.coefs = self.model.coefs
         self.training_params = training_params
         self.validation_params = validation_params
         self.model.training_df = training_df
@@ -676,7 +782,7 @@ class TwoStepConditionalLogisticRegressionEvaluatorEM(TwoStepDataTransformerEM):
             float: The log loss value for the training dataset.
         """
         assert self.model.training_df is not None, 'No input training dataframe provided'
-        choice1_variable_matrix, choice2_variable_matrix, counts_matrix, nonrepeat_grp_matrix, all_site_mask_matrix, index_matrix, prod_mask_matrix = self.get_matrices(self.model.training_df, pretrain=False)
+        choice1_variable_matrix, choice2_variable_matrix, counts_matrix, nonrepeat_grp_matrix, all_site_mask_matrix, index_matrix, prod_mask_matrix, mh_matrix = self.get_matrices(self.model.training_df, pretrain=False)
 
         assert counts_matrix is not None, "counts column is needed"
 
@@ -701,7 +807,7 @@ class TwoStepConditionalLogisticRegressionEvaluatorEM(TwoStepDataTransformerEM):
             float: The log loss value for the validation dataset.
         """
         assert self.validation_df is not None, 'No input validation dataframe provided'
-        choice1_variable_matrix, choice2_variable_matrix, counts_matrix, nonrepeat_grp_matrix, all_site_mask_matrix, index_matrix, prod_mask_matrix = self.get_matrices(self.validation_df, pretrain=False)
+        choice1_variable_matrix, choice2_variable_matrix, counts_matrix, nonrepeat_grp_matrix, all_site_mask_matrix, index_matrix, prod_mask_matrix, mh_matrix = self.get_matrices(self.validation_df, pretrain=False)
 
         assert counts_matrix is not None, "counts column is needed"
 
