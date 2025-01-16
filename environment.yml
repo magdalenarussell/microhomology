@@ -2,6 +2,7 @@ name: microhomology_jax
 channels:
   - conda-forge
   - bioconda
+  - nvidia
 dependencies:
   - bioconductor-biostrings
   - bleach
@@ -9,6 +10,9 @@ dependencies:
   - jax
   - jaxlib
   - jaxopt
+  - cudatoolkit
+  - cuda-nvcc
+  - scikit-learn
   - matplotlib-base
   - matplotlib-inline
   - ncurses

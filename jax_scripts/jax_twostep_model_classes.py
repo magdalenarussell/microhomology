@@ -3,6 +3,10 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 import jaxopt
+import os
+os.environ["JAX_PLATFORM_NAME"] = "cpu"
+jax.config.update('jax_default_device', jax.devices('cpu')[0])
+jax.config.update("jax_disable_jit", True)
 import patsy
 import dill
 import pickle
@@ -112,6 +116,9 @@ class TwoStepDataTransformer(DataTransformer):
 
         # Transform categorical variable columns into contrast columns
         for col in self.variable_colnames:
+            # initialize weighted average mh column
+            if col == 'weighted_avg_mh':
+                df['weighted_avg_mh'] = df['average_mh']
             df = self.transform_categorical_vars(df, col, pretrain)
 
         # check for within-choice-set variance
@@ -361,22 +368,22 @@ class TwoStepConditionalLogisticRegressor(TwoStepDataTransformer):
         # Calculate the productivity probability
         # replace missing choices with -INF so that they will not count towards probability
         # start by getting sum of choice2 probs for sites with desired productivity, then all sites
-        exp_choice2_var_prod = jnp.exp(jnp.where(reshaped_prod_mask, choice2_reshape, jnp.NINF))
-        exp_choice2_var_all = jnp.exp(jnp.where(reshaped_all_mask, choice2_reshape, jnp.NINF))
+        exp_choice2_var_prod = jnp.exp(jnp.where(reshaped_prod_mask, choice2_reshape, -jnp.inf))
+        exp_choice2_var_all = jnp.exp(jnp.where(reshaped_all_mask, choice2_reshape, -jnp.inf))
 
         prod_prob_numerator = jnp.sum(exp_choice2_var_prod, axis = 2)
         prod_prob_denominator = jnp.sum(exp_choice2_var_all, axis = 2)
         prod_prob = prod_prob_numerator/prod_prob_denominator
 
         # get productivity conditioned choice1 probs
-        exp_choice1_var = jnp.exp(jnp.where(choice1_prod_mask, choice1_reshape, jnp.NINF))
+        exp_choice1_var = jnp.exp(jnp.where(choice1_prod_mask, choice1_reshape, -jnp.inf))
         choice1_numerator = prod_prob * exp_choice1_var
         choice1_denominator = jnp.sum(prod_prob * exp_choice1_var, axis = 1)
         choice1_denominator_reshaped = jnp.broadcast_to(choice1_denominator[:, None], choice1_numerator.shape)
         choice1_probs = choice1_numerator/choice1_denominator_reshaped
 
         # next, get softmax of choice2
-        choice2_probs = jax.nn.softmax(jnp.where(reshaped_prod_mask, choice2_reshape, jnp.NINF))
+        choice2_probs = jax.nn.softmax(jnp.where(reshaped_prod_mask, choice2_reshape, -jnp.inf))
         choice2_probs = jnp.where(jnp.isnan(choice2_probs), 0, choice2_probs)
 
         return choice1_probs, choice2_probs
