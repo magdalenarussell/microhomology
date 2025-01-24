@@ -9,7 +9,8 @@ class global_paramaters():
         self.param_group = param_group
         self.left_nuc_motif_count = left_motif_size
         self.right_nuc_motif_count = right_motif_size
-        self.model_type = model_type.replace('twostep_', '')
+        self.standardized = None
+        self.model_type = self.process_model_type(model_type)
         self.param_config = self.import_param_config()
         self.trim_type = getattr(self.param_config, "TRIM_TYPE")
         self.productivity = getattr(self.param_config, "PRODUCTIVITY")
@@ -28,6 +29,15 @@ class global_paramaters():
         self.sample_annotation = getattr(self.param_config, 'SAMPLE_ANNOT')
         self.only_nonprod_sites = getattr(self.param_config, 'ONLY_NONPROD_SITES')
 
+    def process_model_type(self, model_type):
+        name = model_type.replace('twostep_', '')
+        if "standardized" in name:
+            self.standardized = True
+        else:
+            self.standardized = False
+        name = name.replace('standardized_', '')
+        return name
+
     def import_param_config(self):
         param_config = importlib.import_module(f"param_group_configs.{self.param_group}")
         return(param_config)
@@ -41,13 +51,15 @@ class global_paramaters():
         annotation_config = importlib.import_module(f"annotation_configs.{root_annotation}")
         return(annotation_config)
 
-    def R_processed_data_path(self, param_group = None, sample_annotation = None, annotation = None):
+    def R_processed_data_path(self, param_group = None, sample_annotation = None, annotation = None, standardized = None):
         if annotation == None:
             annotation = self.annotation_type
         if param_group == None:
             param_group = self.param_group
         if sample_annotation == None:
             sample_annotation = self.sample_annotation
+        if standardized == None:
+            standardized = self.standardized
 
         path = self.root_path + '/' + annotation + '/' + param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type
         if sample_annotation:
@@ -83,6 +95,9 @@ class global_paramaters():
 
     def model_output_path(self, l2):
         path = self.project_path + '/trained_models/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type
+        if self.standardized:
+            path = path + '/standardized_coefs'
+
         os.makedirs(path, exist_ok=True)
         if self.sample_annotation:
             file_name = path + '/trained_model_L2' + str(l2) + '.pkl'
@@ -92,6 +107,11 @@ class global_paramaters():
 
     def predictions_data_path(self, l2):
         path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type
+        if self.standardized:
+            path = path + '/standardized_coefs'
+
+        os.makedirs(path, exist_ok=True)
+
         if self.sample_annotation:
             file_name = path + '/predicted_dist_data_L2' + str(l2) + '.tsv'
         else:
@@ -99,7 +119,12 @@ class global_paramaters():
         return(file_name)
 
     def validation_predictions_data_path(self, l2, validation_annotation):
-        path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type + '/' + str(validation_annotation)
+        path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type
+        if self.standardized:
+            path = path + '/standardized_coefs'
+
+        path = path + '/' + str(validation_annotation)
+
         os.makedirs(path, exist_ok=True)
         if self.sample_annotation:
             file_name = path + '/predicted_dist_data_L2' + str(l2) + '.tsv'
@@ -109,6 +134,12 @@ class global_paramaters():
 
     def trained_coefs_path(self, l2):
         path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type
+
+        if self.standardized:
+            path = path + '/standardized_coefs'
+
+        os.makedirs(path, exist_ok=True)
+
         if self.sample_annotation:
             file_name = path + '/trained_coefs_L2' + str(l2) + '.tsv'
         else:
@@ -117,6 +148,9 @@ class global_paramaters():
 
     def trained_bootstrap_coefs_path(self, iteration, l2):
         path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type + '/bootstraps'
+        if self.standardized:
+            path = path + '/standardized_coefs'
+
         if self.sample_annotation:
             file_name = path + '/trained_coefs_L2' + str(l2) + '_bootstrap_' + str(iteration) + '.tsv'
         else:
@@ -125,7 +159,12 @@ class global_paramaters():
 
 
     def subsampling_coefs_path(self, prop, l2):
-        path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type + '/subsampling_experiment'
+        path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type
+        if self.standardized:
+            path = path + '/standardized_coefs'
+
+        path = path + '/subsampling_experiment'
+
         os.makedirs(path, exist_ok=True)
         if self.sample_annotation:
             file_name = path + '/data_prop' + str(prop) + '_coefs_L2' + str(l2) + '.tsv'
@@ -135,6 +174,8 @@ class global_paramaters():
 
     def model_eval_results_path(self, l2):
         path = self.root_path + '/' + self.annotation_type + '/' + self.param_group + '/' + self.motif_type + '_motif_trims_bounded_' + str(self.lower_trim_bound) + '_' + str(self.upper_trim_bound) + '/' + str(self.left_nuc_motif_count) + '_' + str(self.right_nuc_motif_count) + '_' + self.model_type
+        if self.standardized:
+            path = path + '/standardized_coefs'
         if self.sample_annotation:
             file_name = path + '/model_evaluation_results_L2' + str(l2) + '.tsv'
         else:
@@ -145,7 +186,7 @@ class global_paramaters():
 class model_specific_parameters():
     def __init__(self, param_group, model_type, left_motif_size, right_motif_size):
         self.param_group = param_group
-        self.model_type = model_type
+        self.model_type = model_type.replace('standardized_', '')
         self.left_nuc_motif_count = left_motif_size
         self.right_nuc_motif_count = right_motif_size
         self.param_config = self.import_param_config()
