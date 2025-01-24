@@ -79,7 +79,7 @@ class DataPreprocessor():
             training_df[new_col_name] = training_df[col].map(var_mapping)
         return training_df
 
-    def get_contrast_matrix(self, training_df, col, pretrain=True):
+    def get_contrast_matrix(self, training_df, col, pretrain=True, standardized = None):
         """
         Get the contrast matrix for categorical variables.
 
@@ -90,6 +90,9 @@ class DataPreprocessor():
         Returns:
             pd.DataFrame: The contrast matrix for the categorical column.
         """
+        if standardized is None:
+            standardized = self.params.standardized
+
         first = training_df[col].iloc[0]
         if not isinstance(first, int) and not isinstance(first, float) and not isinstance(first, np.int64):
             # create sum contrasts matrix
@@ -131,6 +134,19 @@ class DataPreprocessor():
         contrast_vars=[f"{original_col}_{i}" for i in unique]
         return(contrast_vars[:-1], contrast_vars[-1])
 
+    def standardize_feature_variable(self, training_df, col):
+        assert self.params.standardized is True, "Feature variables should not be standardized!"
+        if isinstance(col, list):
+            # if the columns are contrast encoded categorical variables, then
+            # standardize across all contrast columns
+            mean_value = training_df[col].values.mean()
+            std_value = training_df[col].values.std()
+            for c in col:
+                training_df[c] = (training_df[c] - mean_value) / std_value
+        else:
+            training_df[col] = (training_df[col] - training_df[col].mean()) / training_df[col].std()
+        return training_df
+
     def transform_categorical_vars(self, training_df, col, pretrain=True):
         """
         Transforms categorical variables in the DataFrame into contrast columns for model training.
@@ -146,7 +162,7 @@ class DataPreprocessor():
         assert col in self.variable_colnames, "Input column name is not a variable name"
         first = training_df[col].iloc[0]
         if not isinstance(first, int) and not isinstance(first, float) and not isinstance(first, np.int64):
-            contrast_df = self.get_contrast_matrix(training_df, col, pretrain)
+            contrast_df = self.get_contrast_matrix(training_df, col, pretrain, self.params.standardized)
             training_df = pd.merge(training_df, contrast_df, on=col, how='inner')
             new_cols = [x for x in list(contrast_df.columns) if x != col]
             self.variable_colnames = [x for x in self.variable_colnames if x != col] + new_cols
@@ -157,6 +173,11 @@ class DataPreprocessor():
             if self.choice2_variable_colnames is not None:
                 if col in self.choice2_variable_colnames:
                     self.choice2_variable_colnames = [x for x in self.choice2_variable_colnames if x != col] + new_cols
+
+            col = new_cols
+
+        if self.params.standardized:
+            training_df = self.standardize_feature_variable(training_df, col)
 
         return(training_df)
 
